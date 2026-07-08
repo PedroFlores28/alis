@@ -11,7 +11,6 @@ function mapStudent(row, subjects) {
     status: row.status,
     trend: row.trend,
     avatarHue: row.avatar_hue,
-    lastSession: row.last_session,
     nextSession: row.next_session,
     sessions: row.sessions,
     focus: row.focus,
