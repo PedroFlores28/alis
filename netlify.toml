@@ -1,2 +1,3 @@
+# Sitio estático: archivos en la raíz del repo (index.html, css/, js/, assets/)
 [build]
-  publish = "/"
+  command = ""
