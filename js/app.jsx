@@ -66,4 +66,29 @@ function App(){
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+function AlisRoot() {
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        await loadAlisDataFromSupabase();
+      } catch (err) {
+        console.error("[ALIS] No se pudo cargar Supabase:", err);
+      }
+      setReady(true);
+    })();
+  }, []);
+
+  if (!ready) {
+    return (
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#8A8A8A", fontFamily: "Outfit, system-ui, sans-serif" }}>
+        Cargando ALIS…
+      </div>
+    );
+  }
+
+  return <App />;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<AlisRoot />);
