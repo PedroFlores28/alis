@@ -152,12 +152,25 @@ async function uploadEvidence({ teacherId, student, file }) {
   }
 
   const score = analysis?.score;
+  const topic = analysis?.topicTitle || file.name;
   await appendStudentHistory(student.id, teacherId, {
-    label: file.name,
+    label: topic,
     date: "Hoy",
     score: score == null ? null : Number(score),
     type: "Evidencia",
+    status: analysis?.status || null,
+    fileName: file.name,
   });
+
+  if (typeof applyAnalysisToStudent === "function") {
+    applyAnalysisToStudent(student.id, teacherId, analysis);
+  }
+  if (typeof createSuggestionFromAnalysis === "function") {
+    await createSuggestionFromAnalysis(teacherId, student, analysis);
+  }
+  if (typeof createPendingFromEvidence === "function") {
+    await createPendingFromEvidence(teacherId, student, analysis, file.name);
+  }
 
   if (!evidenceRow) {
     const localItem = {

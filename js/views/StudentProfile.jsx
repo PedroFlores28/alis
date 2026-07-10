@@ -89,21 +89,23 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit }) {
               <button className="link-btn">Historial</button>
             </div>
             <div className="history">
-              {student.history.map((h, i) => {
+              {(student.history || []).length ? student.history.map((h, i) => {
                 const st = h.score == null ? "normal" : h.score >= 75 ? "destacado" : h.score >= 60 ? "normal" : h.score >= 50 ? "atencion" : "riesgo";
                 return (
                   <div className="hrow" key={i}>
                     <span className="hrow-icon"><Icon name="file" size={17} /></span>
                     <span className="hrow-main">
                       <span className="hrow-label">{h.label}</span>
-                      <span className="hrow-meta">{h.type} · {h.date}</span>
+                      <span className="hrow-meta">{h.type}{h.fileName ? ` · ${h.fileName}` : ""} · {h.date}</span>
                     </span>
                     <span className="hrow-score" style={{ color: STATUS[st].dot }}>
                       {h.score == null ? "—" : h.score + "%"}
                     </span>
                   </div>
                 );
-              })}
+              }) : (
+                <div className="sugg-empty"><Icon name="file" size={18} /> Aún no hay resultados. Sube una evidencia para empezar el historial.</div>
+              )}
             </div>
           </section>
         </div>

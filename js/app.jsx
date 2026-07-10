@@ -84,6 +84,12 @@ function App({ teacher, onLogout }) {
     setRoute({ view: "alumnos", student: null });
   };
 
+  const onDismissSuggestion = (s) => {
+    if (!s?.id) return;
+    if (typeof dismissSuggestion === "function") dismissSuggestion(teacherId, s.id);
+    pullFromWindow();
+  };
+
   const homeProps = { filter, setFilter, cardStyle: t.cardStyle, density: t.density };
 
   let content;
@@ -132,6 +138,7 @@ function App({ teacher, onLogout }) {
         onRuta={openRutaPicker}
         onEvidence={openEvidencePicker}
         onAddStudent={openAddStudent}
+        onDismissSuggestion={onDismissSuggestion}
       />
     );
   }

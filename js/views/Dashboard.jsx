@@ -31,15 +31,25 @@ function Topbar({ subject, students, onRuta, onEvidence }) {
 
 function KpiStrip({ students }) {
   const total = students.length;
-  const avg = total ? Math.round(students.reduce((a, s) => a + s.progress, 0) / total) : 0;
+  const avg = total ? Math.round(students.reduce((a, s) => a + (Number(s.progress) || 0), 0) / total) : 0;
   const risk = students.filter((s) => s.status === "riesgo").length;
   const attn = students.filter((s) => s.status === "atencion").length;
   const top = students.filter((s) => s.status === "destacado").length;
+  const withHistory = students.filter((s) => (s.history || []).length > 0).length;
+  const avgTrend = total
+    ? Math.round(students.reduce((a, s) => a + (Number(s.trend) || 0), 0) / total)
+    : 0;
+  const trendFoot =
+    !total ? "Sin alumnos aún" :
+    avgTrend > 0 ? `Tendencia +${avgTrend} pts (evidencias)` :
+    avgTrend < 0 ? `Tendencia ${avgTrend} pts (evidencias)` :
+    withHistory ? `${withHistory} con evidencias recientes` : "Aún sin evidencias";
+
   const kpis = [
     { icon: "students", label: "Alumnos", value: total, foot: "En esta materia", tone: "ink" },
     { icon: "alert", label: "Necesitan atención", value: risk + attn, foot: `${risk} en riesgo · ${attn} atención`, tone: "risk" },
-    { icon: "target", label: "Progreso promedio", value: avg + "%", foot: "+3 pts vs. semana pasada", tone: "brand" },
-    { icon: "cap", label: "Destacados", value: top, foot: "Listos para retos", tone: "good" },
+    { icon: "target", label: "Progreso promedio", value: (total ? avg : 0) + "%", foot: trendFoot, tone: "brand" },
+    { icon: "cap", label: "Destacados", value: top, foot: top ? "Según estado actual" : "Ninguno aún", tone: "good" },
   ];
   return (
     <section className="kpis">
@@ -55,30 +65,32 @@ function KpiStrip({ students }) {
   );
 }
 
-function SuggestionCard({ s, onOpen, onAct }) {
+function SuggestionCard({ s, onOpen, onAct, onDismiss }) {
   const student = byId(s.studentId);
   if (!student) return null;
   return (
     <div className="sugg">
       <div className="sugg-top">
         <span className="sugg-tag">{s.tag}</span>
-        <button className="sugg-dismiss" title="Descartar"><Icon name="x" size={15} /></button>
+        <button className="sugg-dismiss" title="Descartar" type="button" onClick={() => onDismiss?.(s)}>
+          <Icon name="x" size={15} />
+        </button>
       </div>
       <div className="sugg-body">
         <p className="sugg-title">{s.title}</p>
         <p className="sugg-text">{s.body}</p>
       </div>
       <div className="sugg-foot">
-        <button className="sugg-student" onClick={() => onOpen(student)}>
+        <button className="sugg-student" type="button" onClick={() => onOpen(student)}>
           <Avatar student={student} size={24} />{student.name.split(" ")[0]}
         </button>
-        <button className="btn btn--primary btn--sm" onClick={() => onAct(student)}>{s.cta} <Icon name="arrowUpRight" size={15} /></button>
+        <button className="btn btn--primary btn--sm" type="button" onClick={() => onAct(student)}>{s.cta} <Icon name="arrowUpRight" size={15} /></button>
       </div>
     </div>
   );
 }
 
-function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onRuta, onEvidence, onAddStudent }) {
+function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onRuta, onEvidence, onAddStudent, onDismissSuggestion }) {
   const shown = students.filter((s) => {
     if (t.filter === "todos") return true;
     if (t.filter === "riesgo") return s.status === "riesgo" || s.status === "atencion";
@@ -124,12 +136,11 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
             <section className="panel panel--ai">
               <div className="panel-head">
                 <div className="panel-head-l"><span className="ai-badge"><Icon name="sparkles" size={16} /></span><h2 className="panel-title">Sugerencias de Alis</h2></div>
-                <button className="link-btn">Ver todas</button>
               </div>
               <div className="sugg-list">
                 {suggestions.length ? suggestions.map((s) => (
-                  <SuggestionCard key={s.id} s={s} onOpen={onOpenStudent} onAct={onGenerate} />
-                )) : <div className="sugg-empty"><Icon name="check" size={18} /> Sin sugerencias pendientes en {subject.name}.</div>}
+                  <SuggestionCard key={s.id} s={s} onOpen={onOpenStudent} onAct={onGenerate} onDismiss={onDismissSuggestion} />
+                )) : <div className="sugg-empty"><Icon name="check" size={18} /> Sin sugerencias. Sube una evidencia para que Alis proponga refuerzo.</div>}
               </div>
             </section>
 

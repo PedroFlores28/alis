@@ -143,12 +143,14 @@ async function loadAlisDataForTeacher(teacherId) {
         client.from("suggestions").select("*"),
         client.from("pending").select("*"),
       ]);
-      window.SUGGESTIONS = (sugRes.data || [])
-        .map(mapSuggestion)
-        .filter((s) => ids.has(s.studentId));
-      window.PENDING = (pendRes.data || [])
-        .map(mapPending)
-        .filter((p) => ids.has(p.studentId));
+      const remoteSug = (sugRes.data || []).map(mapSuggestion);
+      const remotePend = (pendRes.data || []).map(mapPending);
+      if (typeof mergeTeacherFeed === "function") {
+        mergeTeacherFeed(teacherId, remoteSug, remotePend, ids);
+      } else {
+        window.SUGGESTIONS = remoteSug.filter((s) => ids.has(s.studentId));
+        window.PENDING = remotePend.filter((p) => ids.has(p.studentId));
+      }
 
       return { ok: true, source: "supabase", count: list.length };
     }
@@ -160,8 +162,12 @@ async function loadAlisDataForTeacher(teacherId) {
   if (typeof loadCneb === "function") await loadCneb();
   const local = loadLocalStudents(teacherId);
   syncStudentHelpers(local);
-  window.SUGGESTIONS = [];
-  window.PENDING = [];
+  if (typeof mergeTeacherFeed === "function") {
+    mergeTeacherFeed(teacherId, [], [], local.map((s) => s.id));
+  } else {
+    window.SUGGESTIONS = [];
+    window.PENDING = [];
+  }
   return { ok: true, source: "local", count: local.length };
 }
 
