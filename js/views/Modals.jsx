@@ -186,7 +186,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded }) {
 
             {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
             {stage === "uploading" && (
-              <div className="analyzing"><span className="spinner" />Subiendo evidencia y contrastando con CNEB…</div>
+              <div className="analyzing"><span className="spinner" />Subiendo y analizando con Claude (Alis)…</div>
             )}
           </>
         )}
@@ -229,7 +229,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded }) {
           <>
             <button className="btn btn--ghost" onClick={onClose}>Cancelar</button>
             <button className="btn btn--primary" disabled={!file || stage === "uploading"} onClick={analyze}>
-              <Icon name="upload" size={16} /> {stage === "uploading" ? "Subiendo…" : "Subir y contrastar"}
+              <Icon name="sparkles" size={16} /> {stage === "uploading" ? "Analizando…" : "Subir y analizar con IA"}
             </button>
           </>
         )}
