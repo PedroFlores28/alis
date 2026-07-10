@@ -1,5 +1,5 @@
 // StudentProfile.jsx — individual student profile view
-function ProfileTopbar({ student, onBack, onUpload, onGenerate }) {
+function ProfileTopbar({ student, onBack, onUpload, onGenerate, onEdit }) {
   return (
     <header className="topbar">
       <div className="topbar-l topbar-l--profile">
@@ -8,6 +8,9 @@ function ProfileTopbar({ student, onBack, onUpload, onGenerate }) {
         </button>
       </div>
       <div className="topbar-r">
+        <button className="btn btn--ghost" onClick={() => onEdit?.(student)}>
+          <Icon name="pencil" size={18} /> Editar
+        </button>
         <button className="btn btn--ghost" onClick={() => onUpload(student)}>
           <Icon name="upload" size={18} /> Subir resultado
         </button>
@@ -19,11 +22,11 @@ function ProfileTopbar({ student, onBack, onUpload, onGenerate }) {
   );
 }
 
-function StudentProfile({ student, onBack, onUpload, onGenerate }) {
+function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit }) {
   const s = STATUS[student.status];
   return (
     <div className="view">
-      <ProfileTopbar student={student} onBack={onBack} onUpload={onUpload} onGenerate={onGenerate} />
+      <ProfileTopbar student={student} onBack={onBack} onUpload={onUpload} onGenerate={onGenerate} onEdit={onEdit} />
       <div className="view-body">
         {/* Identity header */}
         <section className="profile-hero">
@@ -87,7 +90,7 @@ function StudentProfile({ student, onBack, onUpload, onGenerate }) {
             </div>
             <div className="history">
               {student.history.map((h, i) => {
-                const st = h.score >= 75 ? "destacado" : h.score >= 60 ? "normal" : h.score >= 50 ? "atencion" : "riesgo";
+                const st = h.score == null ? "normal" : h.score >= 75 ? "destacado" : h.score >= 60 ? "normal" : h.score >= 50 ? "atencion" : "riesgo";
                 return (
                   <div className="hrow" key={i}>
                     <span className="hrow-icon"><Icon name="file" size={17} /></span>
@@ -95,7 +98,9 @@ function StudentProfile({ student, onBack, onUpload, onGenerate }) {
                       <span className="hrow-label">{h.label}</span>
                       <span className="hrow-meta">{h.type} · {h.date}</span>
                     </span>
-                    <span className="hrow-score" style={{ color: STATUS[st].dot }}>{h.score}%</span>
+                    <span className="hrow-score" style={{ color: STATUS[st].dot }}>
+                      {h.score == null ? "—" : h.score + "%"}
+                    </span>
                   </div>
                 );
               })}

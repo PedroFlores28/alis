@@ -99,62 +99,122 @@ function PickStudentModal({ title, sub, icon, students, onPick, onClose }) {
 }
 
 // ---------- Upload result ----------
-function UploadModal({ preset, students, onClose }) {
-  const [studentId, setStudentId] = useState(preset ? preset.id : students[0].id);
-  const [hasFile, setHasFile] = useState(false);
-  const [stage, setStage] = useState("form");
-  const student = byId(studentId);
-  const c = SUBJECT_CONTENT[student.subjectId];
+function UploadModal({ preset, students, teacherId, onClose, onUploaded }) {
+  const [studentId, setStudentId] = useState(preset ? preset.id : (students[0] && students[0].id));
+  const [file, setFile] = useState(null);
+  const [stage, setStage] = useState("form"); // form | uploading | done
+  const [analysis, setAnalysis] = useState(null);
+  const [error, setError] = useState("");
+  const fileRef = React.useRef(null);
+  const student = byId(studentId) || students.find((s) => s.id === studentId);
 
-  const analyze = () => { setStage("analyzing"); setTimeout(() => setStage("done"), 1900); };
+  const pickFile = (f) => {
+    if (!f) return;
+    const ok = /^(image\/|application\/pdf)/.test(f.type) || /\.(jpe?g|png|webp|pdf)$/i.test(f.name);
+    if (!ok) {
+      setError("Solo fotos (JPG/PNG) o PDF.");
+      return;
+    }
+    setError("");
+    setFile(f);
+  };
+
+  const analyze = async () => {
+    if (!file || !student) return;
+    setError("");
+    setStage("uploading");
+    try {
+      const result = await uploadEvidence({ teacherId, student, file });
+      setAnalysis(result.analysis);
+      setStage("done");
+      onUploaded?.(result);
+    } catch (err) {
+      setError(err.message || "No se pudo subir la evidencia.");
+      setStage("form");
+    }
+  };
+
+  if (!student) {
+    return (
+      <Modal icon="upload" title="Subir resultado" sub="No hay alumnos en esta materia." onClose={onClose}>
+        <div className="modal-body"><p className="sugg-empty">Agrega un alumno primero.</p></div>
+        <div className="modal-foot"><button className="btn btn--ghost" onClick={onClose}>Cerrar</button></div>
+      </Modal>
+    );
+  }
 
   return (
-    <Modal icon="upload" title="Subir resultado" sub="Sube una foto o PDF y Alis lo analiza por ti." onClose={onClose}>
+    <Modal icon="upload" title="Subir resultado" sub="Foto o PDF desde web o celular. Se guarda y se compara con el CNEB." onClose={onClose}>
       <div className="modal-body">
         {stage !== "done" && (
           <>
             <label className="field-label">Alumno · {student.subject}</label>
-            <StudentPicker value={studentId} onChange={(id) => { setStudentId(id); setHasFile(false); }} students={students} />
+            <StudentPicker value={studentId} onChange={(id) => { setStudentId(id); setFile(null); }} students={students} />
 
             <label className="field-label">Archivo del resultado</label>
-            <button className={"dropzone" + (hasFile ? " has-file" : "")} onClick={() => setHasFile(true)} disabled={stage === "analyzing"}>
-              {hasFile ? (
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*,application/pdf,.pdf"
+              capture="environment"
+              hidden
+              onChange={(e) => pickFile(e.target.files && e.target.files[0])}
+            />
+            <button
+              type="button"
+              className={"dropzone" + (file ? " has-file" : "")}
+              onClick={() => fileRef.current && fileRef.current.click()}
+              disabled={stage === "uploading"}
+            >
+              {file ? (
                 <div className="dropzone-file">
-                  <span className="dropzone-thumb"><Icon name="image" size={22} /></span>
-                  <span className="dropzone-file-meta"><strong>{c.file}</strong><em>1.8 MB · listo para analizar</em></span>
+                  <span className="dropzone-thumb"><Icon name={file.type === "application/pdf" ? "file" : "image"} size={22} /></span>
+                  <span className="dropzone-file-meta">
+                    <strong>{file.name}</strong>
+                    <em>{(file.size / 1024).toFixed(0)} KB · listo para subir</em>
+                  </span>
                   <span className="dropzone-ok"><Icon name="check" size={16} /></span>
                 </div>
               ) : (
                 <div className="dropzone-empty">
                   <span className="dropzone-icon"><Icon name="image" size={26} /></span>
-                  <strong>Arrastra una foto o PDF aquí</strong>
-                  <em>o haz clic para seleccionar · JPG, PNG, PDF</em>
+                  <strong>Toca para elegir foto o PDF</strong>
+                  <em>En el celular puedes usar la cámara · JPG, PNG, PDF</em>
                 </div>
               )}
             </button>
 
-            {stage === "analyzing" && (
-              <div className="analyzing"><span className="spinner" />Analizando con Alis · leyendo respuestas y comparando con el currículo MINEDU…</div>
+            {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
+            {stage === "uploading" && (
+              <div className="analyzing"><span className="spinner" />Subiendo evidencia y contrastando con CNEB…</div>
             )}
           </>
         )}
 
-        {stage === "done" && (
+        {stage === "done" && analysis && (
           <div className="result">
             <div className="result-banner">
-              <span className="result-score">{c.score}%</span>
-              <div className="result-banner-txt"><strong>Análisis listo</strong><span>{c.topicTitle} · {student.name}</span></div>
-              <StatusChip status={c.status} />
+              <span className="result-score" style={{ fontSize: 16, fontWeight: 700 }}>CNEB</span>
+              <div className="result-banner-txt">
+                <strong>Evidencia guardada</strong>
+                <span>{analysis.topicTitle} · {student.name}</span>
+              </div>
+              <StatusChip status={analysis.status} />
             </div>
+            {analysis.cnebCompetence && (
+              <div className="result-next" style={{ marginBottom: 8 }}>
+                <span><strong>Competencia:</strong> {analysis.cnebCompetence}</span>
+              </div>
+            )}
             <div className="result-block">
-              <p className="result-h"><span className="ai-badge ai-badge--sm"><Icon name="sparkles" size={13} /></span> Lo que vio Alis</p>
+              <p className="result-h"><span className="ai-badge ai-badge--sm"><Icon name="sparkles" size={13} /></span> Lectura de Alis</p>
               <ul className="result-list">
-                {c.obs.map((o, i) => (
+                {analysis.obs.map((o, i) => (
                   <li key={i}><Icon name={o.ok ? "check" : "alert"} size={15} style={{ color: o.ok ? "var(--good)" : "var(--risk)" }} /> {o.t}</li>
                 ))}
               </ul>
             </div>
-            <div className="result-next"><span>Sugerencia: {c.next}</span></div>
+            <div className="result-next"><span>Siguiente: {analysis.next}</span></div>
           </div>
         )}
       </div>
@@ -168,7 +228,9 @@ function UploadModal({ preset, students, onClose }) {
         ) : (
           <>
             <button className="btn btn--ghost" onClick={onClose}>Cancelar</button>
-            <button className="btn btn--primary" disabled={!hasFile || stage === "analyzing"} onClick={analyze}><Icon name="sparkles" size={16} /> Analizar con Alis</button>
+            <button className="btn btn--primary" disabled={!file || stage === "uploading"} onClick={analyze}>
+              <Icon name="upload" size={16} /> {stage === "uploading" ? "Subiendo…" : "Subir y contrastar"}
+            </button>
           </>
         )}
       </div>
@@ -271,4 +333,95 @@ function GenerateModal({ preset, students, onClose }) {
   );
 }
 
-Object.assign(window, { UploadModal, GenerateModal, PickStudentModal });
+const GRADES = ["1° Secundaria", "2° Secundaria", "3° Secundaria"];
+
+function StudentFormModal({ student, defaultSubjectId, teacherId, onSaved, onDeleted, onClose }) {
+  const editing = !!(student && student.id);
+  const [name, setName] = useState(student?.name || "");
+  const [grade, setGrade] = useState(student?.grade || "2° Secundaria");
+  const [subjectId, setSubjectId] = useState(student?.subjectId || defaultSubjectId || "mate");
+  const [focus, setFocus] = useState(student?.focus || "");
+  const [note, setNote] = useState(student?.note || "");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const payload = { name, grade, subjectId, focus, note };
+      const saved = editing
+        ? await updateStudent(student.id, payload, teacherId)
+        : await createStudent(payload, teacherId);
+      onSaved(saved);
+    } catch (err) {
+      setError(err.message || "No se pudo guardar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!editing) return;
+    if (!confirm("¿Eliminar a " + student.name + "? Esta acción no se puede deshacer.")) return;
+    setLoading(true);
+    try {
+      await deleteStudent(student.id, teacherId);
+      onDeleted?.(student.id);
+    } catch (err) {
+      setError(err.message || "No se pudo eliminar.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      icon="students"
+      title={editing ? "Editar alumno" : "Agregar alumno"}
+      sub="Los alumnos quedan vinculados a tu cuenta de docente."
+      onClose={onClose}
+    >
+      <div className="modal-body">
+        <label className="field-label">Nombre completo</label>
+        <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Ana Flores" disabled={loading} />
+
+        <label className="field-label">Grado</label>
+        <div className="seg seg--full">
+          {GRADES.map((g) => (
+            <button key={g} type="button" className={"seg-btn" + (grade === g ? " is-on" : "")} onClick={() => setGrade(g)} disabled={loading}>{g}</button>
+          ))}
+        </div>
+
+        <label className="field-label">Materia</label>
+        <div className="seg seg--full">
+          {SUBJECTS.map((s) => (
+            <button key={s.id} type="button" className={"seg-btn" + (subjectId === s.id ? " is-on" : "")} onClick={() => setSubjectId(s.id)} disabled={loading}>
+              <Icon name={s.icon} size={15} /> {s.short || s.name}
+            </button>
+          ))}
+        </div>
+
+        <label className="field-label">Enfoque actual (opcional)</label>
+        <input className="form-input" value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="Ej. Fracciones heterogéneas" disabled={loading} />
+
+        <label className="field-label">Nota (opcional)</label>
+        <textarea className="form-textarea" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Observaciones del docente…" rows={3} disabled={loading} />
+
+        {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
+      </div>
+      <div className="modal-foot">
+        {editing && (
+          <button className="btn btn--ghost" style={{ marginRight: "auto", color: "var(--risk-ink)" }} onClick={remove} disabled={loading}>
+            Eliminar
+          </button>
+        )}
+        <button className="btn btn--ghost" onClick={onClose} disabled={loading}>Cancelar</button>
+        <button className="btn btn--primary" onClick={save} disabled={loading || !name.trim()}>
+          {loading ? "Guardando…" : editing ? "Guardar cambios" : "Agregar alumno"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+Object.assign(window, { UploadModal, GenerateModal, PickStudentModal, StudentFormModal });

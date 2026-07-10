@@ -125,6 +125,7 @@ input{font-family:inherit}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh-sm);overflow:hidden}
 .panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px var(--pad);border-bottom:1px solid var(--line-2)}
 .panel-head-l{display:flex;align-items:center;gap:10px}
+.panel-head-r{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 .panel-title{font-size:16px;font-weight:650;letter-spacing:-.01em}
 .panel-count{background:var(--bg);color:var(--ink-2);font-size:12.5px;font-weight:600;padding:1px 9px;border-radius:20px}
 .panel-sub-inline{font-size:12.5px;color:var(--muted)}
@@ -250,6 +251,10 @@ input{font-family:inherit}
 
 /* ---------- Empty / placeholder views ---------- */
 .scards-empty,.sugg-empty{padding:22px;text-align:center;color:var(--muted);font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px}
+.scards-empty--cta{flex-direction:column;gap:14px;padding:36px 22px}
+.form-input,.form-textarea{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font:inherit;font-size:14.5px;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s}
+.form-input:focus,.form-textarea:focus{border-color:var(--ink);box-shadow:0 0 0 3px oklch(0.92 0.004 95)}
+.form-textarea{resize:vertical;min-height:80px;line-height:1.45}
 .sugg-empty{margin:0 var(--pad) var(--pad)}
 .sugg-empty svg{color:var(--good)}
 

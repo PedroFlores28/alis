@@ -1,4 +1,4 @@
-// RutaPedagogica.jsx — ruta por alumno (nivel actual → objetivo CNEB)
+// RutaPedagogica.jsx — nivel actual → objetivo CNEB del grado/materia
 function RutaPedagogicaView({ student, onBack, onGenerate }) {
   if (!student) {
     return (
@@ -11,6 +11,8 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
       </div>
     );
   }
+
+  const cneb = cnebForStudent(student);
 
   return (
     <div className="view">
@@ -45,7 +47,7 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
         <section className="ruta-flow">
           <div className="ruta-node">
             <span className="ruta-node-label">Nivel actual</span>
-            <p className="ruta-node-title">{student.focus}</p>
+            <p className="ruta-node-title">{student.focus || "Por definir"}</p>
             <p className="ruta-node-text">{student.note}</p>
             <span className="ruta-node-pct">{student.progress}%</span>
           </div>
@@ -53,10 +55,12 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
             <Icon name="chevron" size={22} />
           </div>
           <div className="ruta-node ruta-node--goal">
-            <span className="ruta-node-label">Objetivo (CNEB)</span>
-            <p className="ruta-node-title">Competencia del grado</p>
+            <span className="ruta-node-label">Objetivo CNEB</span>
+            <p className="ruta-node-title">{cneb ? cneb.competence : "Sin ítem CNEB"}</p>
             <p className="ruta-node-text">
-              Referencia curricular MINEDU para {student.grade} en {student.subject}. Alis sugerirá pasos intermedios; tú eliges los temas.
+              {cneb
+                ? `${cneb.capacity}. ${cneb.performance}`
+                : `No hay referencia CNEB para ${student.grade} / ${student.subject}.`}
             </p>
           </div>
         </section>
@@ -72,7 +76,9 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
             <div className="sugg">
               <p className="sugg-title">Próximo paso recomendado</p>
               <p className="sugg-text">
-                Partiendo de “{student.focus}”, Alis propone prácticas alineadas al CNEB para acercar a {student.name.split(" ")[0]} al objetivo del grado.
+                {cneb
+                  ? `Partiendo de “${student.focus || "el nivel actual"}”, Alis sugiere prácticas hacia: ${cneb.capacity}. Tú eliges el tema concreto; el CNEB marca el objetivo.`
+                  : `Define un enfoque para ${student.name.split(" ")[0]} y genera material de refuerzo.`}
               </p>
               <div className="sugg-foot">
                 <span className="sugg-tag">CNEB</span>

@@ -57,6 +57,7 @@ function KpiStrip({ students }) {
 
 function SuggestionCard({ s, onOpen, onAct }) {
   const student = byId(s.studentId);
+  if (!student) return null;
   return (
     <div className="sugg">
       <div className="sugg-top">
@@ -77,7 +78,7 @@ function SuggestionCard({ s, onOpen, onAct }) {
   );
 }
 
-function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onRuta, onEvidence }) {
+function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onRuta, onEvidence, onAddStudent }) {
   const shown = students.filter((s) => {
     if (t.filter === "todos") return true;
     if (t.filter === "riesgo") return s.status === "riesgo" || s.status === "atencion";
@@ -92,16 +93,30 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
           <section className="panel">
             <div className="panel-head">
               <div className="panel-head-l"><h2 className="panel-title">Alumnos</h2><span className="panel-count">{students.length}</span></div>
-              <div className="seg">
-                {[{ id: "todos", label: "Todos" }, { id: "riesgo", label: "Atención" }, { id: "destacado", label: "Destacados" }].map((f) => (
-                  <button key={f.id} className={"seg-btn" + (t.filter === f.id ? " is-on" : "")} onClick={() => t.setFilter(f.id)}>{f.label}</button>
-                ))}
+              <div className="panel-head-r">
+                <div className="seg">
+                  {[{ id: "todos", label: "Todos" }, { id: "riesgo", label: "Atención" }, { id: "destacado", label: "Destacados" }].map((f) => (
+                    <button key={f.id} className={"seg-btn" + (t.filter === f.id ? " is-on" : "")} onClick={() => t.setFilter(f.id)}>{f.label}</button>
+                  ))}
+                </div>
+                <button className="btn btn--primary btn--sm" onClick={onAddStudent}>
+                  <Icon name="plus" size={15} /> Agregar
+                </button>
               </div>
             </div>
             <div className={"scards scards--" + t.cardStyle}>
               {shown.length ? shown.map((s) => (
                 <StudentCard key={s.id} student={s} variant={t.cardStyle} onOpen={() => onOpenStudent(s)} onUpload={() => onUpload(s)} />
-              )) : <div className="scards-empty">No hay alumnos en este filtro.</div>}
+              )) : (
+                <div className="scards-empty scards-empty--cta">
+                  <p>{students.length ? "No hay alumnos en este filtro." : "Aún no tienes alumnos en esta materia."}</p>
+                  {!students.length && (
+                    <button className="btn btn--primary btn--sm" onClick={onAddStudent}>
+                      <Icon name="plus" size={15} /> Agregar alumno
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </section>
 
@@ -125,6 +140,7 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
               <div className="pending-list">
                 {pending.length ? pending.map((p) => {
                   const student = byId(p.studentId);
+                  if (!student) return null;
                   return (
                     <button className="pending" key={p.id} onClick={() => onOpenStudent(student)}>
                       <span className="pending-icon"><Icon name={p.icon} size={18} /></span>

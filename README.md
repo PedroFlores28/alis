@@ -1,42 +1,31 @@
 # ALIS — Dashboard del docente
 
-ALIS es un panel web **solo para docentes/tutores** (MVP unidireccional). Permite ver métricas, subir evidencia, seguir una ruta pedagógica por alumno y generar material temporal alineado al CNEB/MINEDU.
+ALIS es un panel **solo para docentes/tutores**. Login con Google, alumnos propios, evidencia, ruta pedagógica con CNEB y métricas simples.
 
-## Qué hace
+## Qué hace hoy
 
-- **Login con Google:** acceso del docente (como en la pantalla de bienvenida).
-- **Vista de alumnos:** por materia (Matemática, Inglés, Comunicación), con estado y progreso.
-- **Perfil del alumno:** dominio por tema, historial y lectura de Alis.
-- **Ruta Pedagógica:** nivel actual → objetivo curricular (CNEB), por alumno.
-- **Subir resultado y generar material:** evidencia + análisis; el material generado es descargable y no se archiva en un banco.
-- **Sugerencias de Alis** y **métricas** simples por materia.
+- Login con Google
+- Gestión de alumnos (crear / editar / eliminar) por docente
+- 3 materias fijas: Matemática, Inglés, Comunicación
+- Subida real de evidencia (foto/PDF, web y móvil)
+- Base CNEB mínima (competencias por grado/materia)
+- Ruta Pedagógica: nivel actual → objetivo CNEB
+- Historial, sugerencias y métricas (aún simples / parciales)
 
-## Cómo funciona
+## Setup Supabase (obligatorio)
 
-1. El docente inicia sesión con su correo.
-2. Se cargan datos desde **Supabase** (o respaldo local en `js/data.jsx`).
-3. Acciones globales (Ruta / Subir y generar) piden primero **elegir alumno**.
-4. La materia activa filtra alumnos, sugerencias y pendientes.
+1. `js/config.js` con URL + Publishable key
+2. Ejecuta **`supabase/mvp-setup.sql`** en el SQL Editor (alumnos, CNEB, evidencias, Storage)
+3. Auth → Google provider + URL Configuration (`https://alis.fibee.pro`)
 
-## Estructura
+## Pendiente del MVP
 
-```
-index.html
-css/
-js/
-  auth.js           Sesión del docente
-  app.jsx           Rutas y gate de login
-  data.jsx / data-service.js
-  components/       Sidebar, tarjetas, Tweaks
-  views/            Login, Dashboard, Perfil, Ruta, Modales
-supabase/seed.sql
-```
-
-## Configuración
-
-1. Copia `js/config.example.js` como `js/config.js` con tu URL y key de Supabase.
-2. Ejecuta `supabase/seed.sql` en el SQL Editor si usas datos remotos.
+- OCR + análisis IA real de respuestas
+- Generador de material con IA real (descarga temporal)
+- Sugerencias automáticas desde evidencia
+- Historial académico más rico
+- Gestión avanzada de materias (opcional; las 3 fijas bastan)
 
 ## Despliegue
 
-Sitio estático en **Netlify** desde `main`. Sin build.
+Sitio estático en Netlify desde `main`.

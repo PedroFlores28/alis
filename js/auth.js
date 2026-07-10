@@ -28,7 +28,13 @@ function teacherFromUser(user) {
   const pretty = String(name).replace(/\b\w/g, (c) => c.toUpperCase());
   const parts = pretty.split(" ").filter(Boolean);
   const initials = ((parts[0]?.[0] || "D") + (parts[1]?.[0] || "")).toUpperCase();
-  return { name: pretty, plan: "Plan Tutor", initials, email };
+  return {
+    id: user?.id || null,
+    name: pretty,
+    plan: "Plan Tutor",
+    initials,
+    email,
+  };
 }
 
 function teacherFromEmail(email) {
@@ -79,6 +85,7 @@ async function signOutAlis() {
 function applyTeacherToWindow(teacher) {
   if (!teacher) return;
   window.TEACHER = {
+    id: teacher.id || null,
     name: teacher.name,
     plan: teacher.plan || "Plan Tutor",
     initials: teacher.initials,
