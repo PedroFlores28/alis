@@ -43,8 +43,9 @@ function SubjectSelector({ activeSubject, onChange }) {
   );
 }
 
-function Sidebar({ route, activeSubject, onNavigate, onSubject }) {
+function Sidebar({ route, activeSubject, onNavigate, onSubject, onRuta, onLogout }) {
   const inStudents = route.view === "alumnos" || route.view === "perfil";
+  const inRuta = route.view === "ruta";
   return (
     <aside className="sidebar">
       <div className="sb-brand">
@@ -62,10 +63,9 @@ function Sidebar({ route, activeSubject, onNavigate, onSubject }) {
           <span className="sb-link-label">Alumnos</span>
           <span className="sb-link-count">{studentsOf(activeSubject).length}</span>
         </button>
-        <button className={"sb-link" + (route.view === "banco" ? " is-active" : "")} onClick={() => onNavigate({ view: "banco" })}>
-          <span className="sb-link-icon"><Icon name="bank" size={20} /></span>
-          <span className="sb-link-label">Banco de Material</span>
-          <span className="sb-badge">{NEW_MATERIALS}</span>
+        <button className={"sb-link" + (inRuta ? " is-active" : "")} onClick={onRuta}>
+          <span className="sb-link-icon"><Icon name="target" size={20} /></span>
+          <span className="sb-link-label">Ruta Pedagógica</span>
         </button>
       </nav>
 
@@ -76,7 +76,7 @@ function Sidebar({ route, activeSubject, onNavigate, onSubject }) {
         <span className="sb-link-label">Configuración</span>
       </button>
 
-      <div className="sb-profile">
+      <div className="sb-profile" role="button" tabIndex={0} onClick={onLogout} title="Cerrar sesión">
         <div className="sb-avatar">{TEACHER.initials}</div>
         <div className="sb-profile-meta">
           <span className="sb-profile-name">{TEACHER.name}</span>

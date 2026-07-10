@@ -69,6 +69,35 @@ function StudentPicker({ value, onChange, students }) {
   );
 }
 
+// Popup inicial: siempre elegir alumno antes de Ruta o Subir/Generar
+function PickStudentModal({ title, sub, icon, students, onPick, onClose }) {
+  const [studentId, setStudentId] = useState(students[0] ? students[0].id : null);
+  const canContinue = studentId && students.some((s) => s.id === studentId);
+
+  return (
+    <Modal icon={icon || "students"} title={title} sub={sub} onClose={onClose}>
+      <div className="modal-body">
+        <label className="field-label">Alumno</label>
+        {students.length ? (
+          <StudentPicker value={studentId} onChange={setStudentId} students={students} />
+        ) : (
+          <p className="sugg-empty">No hay alumnos en esta materia.</p>
+        )}
+      </div>
+      <div className="modal-foot">
+        <button className="btn btn--ghost" onClick={onClose}>Cancelar</button>
+        <button
+          className="btn btn--primary"
+          disabled={!canContinue}
+          onClick={() => onPick(byId(studentId))}
+        >
+          Continuar
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 // ---------- Upload result ----------
 function UploadModal({ preset, students, onClose }) {
   const [studentId, setStudentId] = useState(preset ? preset.id : students[0].id);
@@ -229,7 +258,7 @@ function GenerateModal({ preset, students, onClose }) {
           <>
             <button className="btn btn--ghost" onClick={onClose}>Descartar</button>
             <button className="btn btn--ghost"><Icon name="download" size={16} /> Descargar PDF</button>
-            <button className="btn btn--primary" onClick={onClose}><Icon name="check" size={16} /> Guardar en banco</button>
+            <button className="btn btn--primary" onClick={onClose}><Icon name="download" size={16} /> Descargar y cerrar</button>
           </>
         ) : (
           <>
@@ -242,4 +271,4 @@ function GenerateModal({ preset, students, onClose }) {
   );
 }
 
-Object.assign(window, { UploadModal, GenerateModal });
+Object.assign(window, { UploadModal, GenerateModal, PickStudentModal });
