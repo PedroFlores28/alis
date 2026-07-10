@@ -41,7 +41,7 @@ const Icon = ({ name, size = 20, stroke = 1.6, style }) => {
   );
 };
 
-const TEACHER = { name: "Ernesto Sánchez", plan: "Plan Tutor", initials: "ES" };
+const TEACHER = { name: "Docente", plan: "Plan Tutor", initials: "DO" };
 
 const SUBJECTS = [
   { id: "mate", name: "Matemática", short: "Mat.", icon: "mate" },
@@ -56,116 +56,12 @@ const STATUS = {
   destacado: { label: "Destacado", dot: "var(--good)", chipBg: "var(--good-bg)", chipInk: "var(--good-ink)" },
 };
 
-const STUDENTS = [
-  // ---------- Matemática ----------
-  {
-    id: "javier", subjectId: "mate", name: "Javier Torres", initials: "JT", grade: "2° Secundaria", subject: "Matemática",
-    progress: 45, status: "riesgo", trend: -6, avatarHue: 18, nextSession: "Hoy · 4:30 p.m.", sessions: 14,
-    focus: "Fracciones y operaciones con decimales", note: "3 sesiones seguidas con dificultad en fracciones.",
-    topics: [{ name: "Números enteros", score: 78 }, { name: "Fracciones", score: 38 }, { name: "Decimales", score: 44 }, { name: "Proporcionalidad", score: 52 }],
-    history: [{ label: "Práctica de fracciones", date: "5 jun", score: 42, type: "Evaluación" }, { label: "Quiz: operaciones combinadas", date: "1 jun", score: 48, type: "Quiz" }, { label: "Tarea: decimales", date: "28 may", score: 55, type: "Tarea" }],
-  },
-  {
-    id: "mateo", subjectId: "mate", name: "Mateo Quispe", initials: "MQ", grade: "2° Secundaria", subject: "Matemática",
-    progress: 72, status: "normal", trend: 4, avatarHue: 230, nextSession: "Mié · 5:00 p.m.", sessions: 19,
-    focus: "Ecuaciones de primer grado", note: "Progreso constante. Mantiene el ritmo esperado.",
-    topics: [{ name: "Números enteros", score: 80 }, { name: "Fracciones", score: 70 }, { name: "Ecuaciones", score: 66 }, { name: "Geometría", score: 72 }],
-    history: [{ label: "Quiz: ecuaciones", date: "6 jun", score: 74, type: "Quiz" }, { label: "Práctica: geometría", date: "2 jun", score: 71, type: "Evaluación" }, { label: "Tarea: fracciones", date: "29 may", score: 68, type: "Tarea" }],
-  },
-  {
-    id: "ana", subjectId: "mate", name: "Ana Flores", initials: "AF", grade: "1° Secundaria", subject: "Matemática",
-    progress: 61, status: "atencion", trend: -2, avatarHue: 300, nextSession: "Vie · 4:00 p.m.", sessions: 11,
-    focus: "Operaciones con números naturales", note: "Bajó el ritmo esta semana. Conviene reforzar pronto.",
-    topics: [{ name: "Números naturales", score: 66 }, { name: "Múltiplos y divisores", score: 58 }, { name: "Potencias", score: 55 }, { name: "Geometría básica", score: 64 }],
-    history: [{ label: "Quiz: múltiplos", date: "3 jun", score: 59, type: "Quiz" }, { label: "Tarea: potencias", date: "30 may", score: 56, type: "Tarea" }, { label: "Práctica: naturales", date: "26 may", score: 67, type: "Evaluación" }],
-  },
-  {
-    id: "diego", subjectId: "mate", name: "Diego Ramos", initials: "DR", grade: "3° Secundaria", subject: "Matemática",
-    progress: 84, status: "destacado", trend: 7, avatarHue: 200, nextSession: "Jue · 6:00 p.m.", sessions: 21,
-    focus: "Funciones lineales y cuadráticas", note: "Rinde por encima del nivel. Listo para retos avanzados.",
-    topics: [{ name: "Álgebra", score: 88 }, { name: "Funciones", score: 82 }, { name: "Geometría analítica", score: 80 }, { name: "Estadística", score: 86 }],
-    history: [{ label: "Evaluación: funciones", date: "5 jun", score: 87, type: "Evaluación" }, { label: "Quiz: álgebra", date: "1 jun", score: 83, type: "Quiz" }, { label: "Reto: sistemas", date: "27 may", score: 90, type: "Reto" }],
-  },
-  // ---------- Inglés ----------
-  {
-    id: "valentina", subjectId: "ingles", name: "Valentina Cruz", initials: "VC", grade: "2° Secundaria", subject: "Inglés",
-    progress: 82, status: "destacado", trend: 6, avatarHue: 160, nextSession: "Mar · 5:30 p.m.", sessions: 18,
-    focus: "Speaking — fluidez en presente y pasado", note: "Excelente comprensión. Lista para conversación más libre.",
-    topics: [{ name: "Reading", score: 86 }, { name: "Listening", score: 84 }, { name: "Grammar", score: 78 }, { name: "Speaking", score: 80 }],
-    history: [{ label: "Listening test: Unit 4", date: "6 jun", score: 85, type: "Evaluación" }, { label: "Quiz: past simple", date: "2 jun", score: 81, type: "Quiz" }, { label: "Reading: short story", date: "29 may", score: 79, type: "Tarea" }],
-  },
-  {
-    id: "joaquin", subjectId: "ingles", name: "Joaquín Mendoza", initials: "JM", grade: "1° Secundaria", subject: "Inglés",
-    progress: 53, status: "riesgo", trend: -5, avatarHue: 40, nextSession: "Hoy · 6:30 p.m.", sessions: 9,
-    focus: "Vocabulario básico y verbo to be", note: "Le cuesta el vocabulario base. Conviene reforzar con práctica visual.",
-    topics: [{ name: "Vocabulary", score: 48 }, { name: "Grammar (to be)", score: 50 }, { name: "Listening", score: 58 }, { name: "Reading", score: 56 }],
-    history: [{ label: "Quiz: verb to be", date: "4 jun", score: 47, type: "Quiz" }, { label: "Vocabulary check", date: "31 may", score: 51, type: "Evaluación" }, { label: "Tarea: family words", date: "27 may", score: 55, type: "Tarea" }],
-  },
-  {
-    id: "renata", subjectId: "ingles", name: "Renata Silva", initials: "RS", grade: "3° Secundaria", subject: "Inglés",
-    progress: 69, status: "normal", trend: 3, avatarHue: 280, nextSession: "Vie · 5:00 p.m.", sessions: 16,
-    focus: "Writing — párrafos con conectores", note: "Avance estable. Puede mejorar la producción escrita.",
-    topics: [{ name: "Reading", score: 72 }, { name: "Listening", score: 70 }, { name: "Grammar", score: 68 }, { name: "Writing", score: 64 }],
-    history: [{ label: "Writing: opinion text", date: "5 jun", score: 66, type: "Evaluación" }, { label: "Quiz: connectors", date: "1 jun", score: 71, type: "Quiz" }, { label: "Reading: article", date: "28 may", score: 69, type: "Tarea" }],
-  },
-  // ---------- Comunicación ----------
-  {
-    id: "lucia", subjectId: "comunicacion", name: "Lucía Paredes", initials: "LP", grade: "3° Secundaria", subject: "Comunicación",
-    progress: 88, status: "destacado", trend: 9, avatarHue: 150, nextSession: "Jue · 3:30 p.m.", sessions: 22,
-    focus: "Comprensión lectora — textos argumentativos", note: "Rendimiento sobresaliente. Lista para retos avanzados.",
-    topics: [{ name: "Comprensión lectora", score: 92 }, { name: "Producción de textos", score: 85 }, { name: "Gramática", score: 88 }, { name: "Ortografía", score: 86 }],
-    history: [{ label: "Ensayo argumentativo", date: "4 jun", score: 91, type: "Evaluación" }, { label: "Quiz: conectores", date: "31 may", score: 89, type: "Quiz" }, { label: "Lectura crítica", date: "27 may", score: 87, type: "Tarea" }],
-  },
-  {
-    id: "camila", subjectId: "comunicacion", name: "Camila Ríos", initials: "CR", grade: "2° Secundaria", subject: "Comunicación",
-    progress: 64, status: "atencion", trend: -3, avatarHue: 350, nextSession: "Mié · 4:30 p.m.", sessions: 13,
-    focus: "Producción de textos narrativos", note: "Bajó su ritmo. Refuerzo en estructura de textos sugerido.",
-    topics: [{ name: "Comprensión lectora", score: 70 }, { name: "Producción de textos", score: 56 }, { name: "Gramática", score: 62 }, { name: "Ortografía", score: 68 }],
-    history: [{ label: "Texto narrativo", date: "3 jun", score: 58, type: "Evaluación" }, { label: "Quiz: ortografía", date: "30 may", score: 66, type: "Quiz" }, { label: "Lectura: cuento", date: "26 may", score: 67, type: "Tarea" }],
-  },
-  {
-    id: "sebastian", subjectId: "comunicacion", name: "Sebastián Vega", initials: "SV", grade: "1° Secundaria", subject: "Comunicación",
-    progress: 71, status: "normal", trend: 2, avatarHue: 110, nextSession: "Vie · 3:00 p.m.", sessions: 12,
-    focus: "Comprensión de textos descriptivos", note: "Progreso constante. Buen manejo de vocabulario.",
-    topics: [{ name: "Comprensión lectora", score: 74 }, { name: "Producción de textos", score: 68 }, { name: "Gramática", score: 70 }, { name: "Ortografía", score: 72 }],
-    history: [{ label: "Comprensión: descripción", date: "6 jun", score: 73, type: "Evaluación" }, { label: "Quiz: sustantivos", date: "2 jun", score: 70, type: "Quiz" }, { label: "Tarea: redacción", date: "29 may", score: 69, type: "Tarea" }],
-  },
-];
+// Sin alumnos demo: cada docente empieza vacío y carga los suyos desde Supabase.
+const STUDENTS = [];
+const SUGGESTIONS = [];
+const PENDING = [];
 
-const SUGGESTIONS = [
-  { id: "s1", studentId: "javier", title: "Javier necesita refuerzo en fracciones", body: "Lleva 3 sesiones con dificultad en fracciones. Te sugerimos una práctica de refuerzo de 10 ejercicios graduados.", tag: "Refuerzo", cta: "Generar práctica" },
-  { id: "s2", studentId: "ana", title: "Ana bajó su ritmo esta semana", body: "Su progreso cayó 2 puntos. Una sesión corta de repaso de múltiplos podría reencauzarla.", tag: "Seguimiento", cta: "Ver sugerencia" },
-  { id: "s3", studentId: "diego", title: "Diego está listo para un reto", body: "Rinde 84% en funciones. Propón un reto de sistemas de ecuaciones para mantenerlo desafiado.", tag: "Avance", cta: "Generar reto" },
-  { id: "s4", studentId: "joaquin", title: "Joaquín necesita reforzar vocabulario", body: "Su vocabulario base está en 48%. Una práctica visual con flashcards puede ayudarlo a avanzar.", tag: "Refuerzo", cta: "Generar práctica" },
-  { id: "s5", studentId: "valentina", title: "Valentina está lista para conversación", body: "Domina el listening (84%). Propón un ejercicio de speaking más libre sobre rutinas.", tag: "Avance", cta: "Generar reto" },
-  { id: "s6", studentId: "camila", title: "Camila necesita estructura de textos", body: "Su producción escrita está en 56%. Una guía paso a paso de textos narrativos la ayudaría.", tag: "Seguimiento", cta: "Ver sugerencia" },
-];
+const byId = (id) => (window.STUDENTS || STUDENTS).find((s) => s.id === id);
+const studentsOf = (sid) => (window.STUDENTS || STUDENTS).filter((s) => s.subjectId === sid);
 
-const PENDING = [
-  { id: "p1", studentId: "javier", label: "Práctica de fracciones", kind: "Foto subida", time: "Hace 1 h", icon: "image" },
-  { id: "p2", studentId: "mateo", label: "Quiz de ecuaciones", kind: "PDF", time: "Hace 3 h", icon: "file" },
-  { id: "p3", studentId: "valentina", label: "Listening test: Unit 4", kind: "PDF", time: "Hace 2 h", icon: "file" },
-  { id: "p4", studentId: "joaquin", label: "Quiz: verb to be", kind: "Foto subida", time: "Ayer", icon: "image" },
-  { id: "p5", studentId: "lucia", label: "Ensayo argumentativo", kind: "PDF", time: "Ayer", icon: "file" },
-  { id: "p6", studentId: "camila", label: "Texto narrativo", kind: "Foto subida", time: "Hace 5 h", icon: "image" },
-];
-
-// Banco de Material — global, ordenado por materia + nivel
-const MATERIALS = [
-  { id: "m1", subjectId: "mate", type: "Práctica", title: "Refuerzo de fracciones heterogéneas", level: "2° Secundaria", items: 10, date: "Hoy", isNew: true },
-  { id: "m2", subjectId: "mate", type: "Quiz", title: "Operaciones combinadas", level: "2° Secundaria", items: 8, date: "Hoy", isNew: true },
-  { id: "m3", subjectId: "mate", type: "Reto", title: "Sistemas de ecuaciones", level: "3° Secundaria", items: 6, date: "Hace 2 días", isNew: false },
-  { id: "m4", subjectId: "mate", type: "Práctica", title: "Números naturales y potencias", level: "1° Secundaria", items: 12, date: "Hace 4 días", isNew: false },
-  { id: "m5", subjectId: "ingles", type: "Práctica", title: "Vocabulary flashcards: family", level: "1° Secundaria", items: 14, date: "Ayer", isNew: true },
-  { id: "m6", subjectId: "ingles", type: "Quiz", title: "Past simple — regular verbs", level: "2° Secundaria", items: 10, date: "Hace 3 días", isNew: false },
-  { id: "m7", subjectId: "ingles", type: "Reto", title: "Speaking prompts: daily routines", level: "2° Secundaria", items: 8, date: "Hace 5 días", isNew: false },
-  { id: "m8", subjectId: "comunicacion", type: "Práctica", title: "Estructura de textos narrativos", level: "2° Secundaria", items: 9, date: "Hace 1 día", isNew: false },
-  { id: "m9", subjectId: "comunicacion", type: "Quiz", title: "Conectores lógicos", level: "3° Secundaria", items: 10, date: "Hace 6 días", isNew: false },
-];
-
-const NEW_MATERIALS = MATERIALS.filter((m) => m.isNew).length;
-
-const byId = (id) => STUDENTS.find((s) => s.id === id);
-const studentsOf = (sid) => STUDENTS.filter((s) => s.subjectId === sid);
-
-Object.assign(window, { Icon, TEACHER, SUBJECTS, STUDENTS, STATUS, SUGGESTIONS, PENDING, MATERIALS, NEW_MATERIALS, byId, studentsOf });
+Object.assign(window, { Icon, TEACHER, SUBJECTS, STUDENTS, STATUS, SUGGESTIONS, PENDING, byId, studentsOf });

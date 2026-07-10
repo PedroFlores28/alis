@@ -1,44 +1,20 @@
 // Modals.jsx — Upload result + Generate material (AI), subject-aware
 const { useState } = React;
 
-const SUBJECT_CONTENT = {
-  mate: {
-    file: "practica_fracciones.jpg", topicTitle: "Fracciones heterogéneas",
-    pills: ["Fracciones heterogéneas", "m.c.m. y m.c.d.", "Simplificación"],
-    score: 68, status: "atencion",
-    obs: [
-      { ok: true, t: "Domina la suma de fracciones homogéneas (4/4 correctas)." },
-      { ok: false, t: "Confunde el m.c.m. al sumar fracciones heterogéneas." },
-      { ok: false, t: "Errores de simplificación en 3 de 6 ejercicios." },
+/** Contenido demo del generador (hasta tener IA real de material). */
+function demoMaterialFor(student) {
+  const topic = (student && student.focus) || "Tema actual";
+  return {
+    topicTitle: topic,
+    pills: [topic, student.grade, student.subject].filter(Boolean),
+    preview: [
+      `Practica: ${topic} — ejercicio 1`,
+      `Practica: ${topic} — ejercicio 2`,
+      `Practica: ${topic} — ejercicio 3`,
+      `Practica: ${topic} — ejercicio 4`,
     ],
-    next: "generar 8 ejercicios graduados de fracciones heterogéneas.",
-    preview: ["Resuelve: 1/2 + 1/3 =", "Resuelve: 3/4 − 1/6 =", "Halla el m.c.m. de 4 y 6, luego suma 1/4 + 5/6.", "Simplifica el resultado: 8/12 + 2/12 ="],
-  },
-  ingles: {
-    file: "listening_unit4.pdf", topicTitle: "Past simple — regular verbs",
-    pills: ["Past simple", "Vocabulario: rutinas", "Listening"],
-    score: 72, status: "normal",
-    obs: [
-      { ok: true, t: "Buena comprensión auditiva (8/10 correctas)." },
-      { ok: false, t: "Confunde verbos regulares e irregulares en pasado." },
-      { ok: false, t: "Errores de spelling en 3 respuestas." },
-    ],
-    next: "generar 8 ejercicios de past simple con verbos regulares.",
-    preview: ["Complete: Yesterday I ____ (play) football.", "Write the past form of: study, watch, travel.", "Listen and answer: What did Ana do on Sunday?", "Order the words: school / to / went / she."],
-  },
-  comunicacion: {
-    file: "texto_narrativo.jpg", topicTitle: "Textos narrativos",
-    pills: ["Estructura narrativa", "Conectores", "Ortografía"],
-    score: 58, status: "atencion",
-    obs: [
-      { ok: true, t: "Buen uso de vocabulario descriptivo." },
-      { ok: false, t: "La estructura del texto no es clara (falta desenlace)." },
-      { ok: false, t: "Errores de ortografía en 4 oraciones." },
-    ],
-    next: "generar una guía paso a paso de textos narrativos.",
-    preview: ["Identifica inicio, nudo y desenlace en el texto dado.", "Redacta un párrafo narrativo usando 3 conectores.", "Corrige los errores de ortografía en las oraciones.", "Ordena los hechos del relato cronológicamente."],
-  },
-};
+  };
+}
 
 function Modal({ title, sub, icon, onClose, children, wide }) {
   return (
@@ -99,7 +75,7 @@ function PickStudentModal({ title, sub, icon, students, onPick, onClose }) {
 }
 
 // ---------- Upload result ----------
-function UploadModal({ preset, students, teacherId, onClose, onUploaded }) {
+function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGenerateReinforcement }) {
   const [studentId, setStudentId] = useState(preset ? preset.id : (students[0] && students[0].id));
   const [file, setFile] = useState(null);
   const [stage, setStage] = useState("form"); // form | uploading | done
@@ -223,7 +199,15 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded }) {
         {stage === "done" ? (
           <>
             <button className="btn btn--ghost" onClick={onClose}>Cerrar</button>
-            <button className="btn btn--primary" onClick={onClose}><Icon name="sparkles" size={16} /> Generar refuerzo</button>
+            <button
+              className="btn btn--primary"
+              onClick={() => {
+                if (onGenerateReinforcement) onGenerateReinforcement(student, analysis);
+                else onClose();
+              }}
+            >
+              <Icon name="sparkles" size={16} /> Generar refuerzo
+            </button>
           </>
         ) : (
           <>
@@ -240,14 +224,24 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded }) {
 
 // ---------- Generate material ----------
 function GenerateModal({ preset, students, onClose }) {
-  const [studentId, setStudentId] = useState(preset && preset.id ? preset.id : students[0].id);
+  const list = students || [];
+  const [studentId, setStudentId] = useState(preset && preset.id ? preset.id : (list[0] && list[0].id));
   const [type, setType] = useState("practica");
   const [difficulty, setDifficulty] = useState("graduada");
   const [count, setCount] = useState(8);
   const [stage, setStage] = useState("form");
-  const student = byId(studentId);
-  const c = SUBJECT_CONTENT[student.subjectId];
+  const student = byId(studentId) || list.find((s) => s.id === studentId);
 
+  if (!student) {
+    return (
+      <Modal icon="sparkles" title="Generar material con Alis" sub="Necesitas un alumno primero." onClose={onClose}>
+        <div className="modal-body"><p className="sugg-empty">Agrega un alumno para generar material.</p></div>
+        <div className="modal-foot"><button className="btn btn--ghost" onClick={onClose}>Cerrar</button></div>
+      </Modal>
+    );
+  }
+
+  const c = demoMaterialFor(student);
   const types = [{ id: "practica", label: "Práctica", icon: "pencil" }, { id: "quiz", label: "Quiz", icon: "check" }, { id: "reto", label: "Reto", icon: "flag" }];
   const diffs = [{ id: "facil", label: "Fácil" }, { id: "graduada", label: "Graduada" }, { id: "avanzada", label: "Avanzada" }];
   const typeLabel = { practica: "Práctica", quiz: "Quiz", reto: "Reto" }[type];
@@ -255,12 +249,12 @@ function GenerateModal({ preset, students, onClose }) {
   const generate = () => { setStage("generating"); setTimeout(() => setStage("done"), 2000); };
 
   return (
-    <Modal icon="sparkles" title="Generar material con Alis" sub="Alineado al currículo MINEDU y al nivel del alumno." onClose={onClose} wide>
+    <Modal icon="sparkles" title="Generar material con Alis" sub="Por ahora es una demo visual. La generación real con IA es el siguiente paso." onClose={onClose} wide>
       <div className="modal-body modal-body--gen">
         {stage !== "done" ? (
           <>
             <label className="field-label">Para quién · {student.subject}</label>
-            <StudentPicker value={studentId} onChange={setStudentId} students={students} />
+            <StudentPicker value={studentId} onChange={setStudentId} students={list} />
 
             <div className="gen-grid">
               <div>
@@ -319,8 +313,14 @@ function GenerateModal({ preset, students, onClose }) {
         {stage === "done" ? (
           <>
             <button className="btn btn--ghost" onClick={onClose}>Descartar</button>
-            <button className="btn btn--ghost"><Icon name="download" size={16} /> Descargar PDF</button>
-            <button className="btn btn--primary" onClick={onClose}><Icon name="download" size={16} /> Descargar y cerrar</button>
+            <button
+              className="btn btn--ghost"
+              type="button"
+              onClick={() => alert("La descarga real de PDF aún no está activa. El generador de material con IA es el siguiente paso del MVP.")}
+            >
+              <Icon name="download" size={16} /> Descargar PDF
+            </button>
+            <button className="btn btn--primary" onClick={onClose}><Icon name="check" size={16} /> Listo</button>
           </>
         ) : (
           <>

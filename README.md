@@ -8,6 +8,7 @@ ALIS es un panel **solo para docentes/tutores**. Login con Google, alumnos propi
 - Gestión de alumnos (crear / editar / eliminar) por docente
 - 3 materias fijas: Matemática, Inglés, Comunicación
 - Subida real de evidencia (foto/PDF, web y móvil)
+- Análisis IA de evidencia (Claude Haiku vía Edge Function `analyze-evidence`)
 - Base CNEB mínima (competencias por grado/materia)
 - Ruta Pedagógica: nivel actual → objetivo CNEB
 - Historial, sugerencias y métricas (aún simples / parciales)
@@ -20,7 +21,6 @@ ALIS es un panel **solo para docentes/tutores**. Login con Google, alumnos propi
 
 ## Pendiente del MVP
 
-- OCR + análisis IA real de respuestas
 - Generador de material con IA real (descarga temporal)
 - Sugerencias automáticas desde evidencia
 - Historial académico más rico

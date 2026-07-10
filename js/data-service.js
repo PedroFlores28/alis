@@ -165,11 +165,6 @@ async function loadAlisDataForTeacher(teacherId) {
   return { ok: true, source: "local", count: local.length };
 }
 
-/** @deprecated usar loadAlisDataForTeacher */
-async function loadAlisDataFromSupabase() {
-  return loadAlisDataForTeacher(null);
-}
-
 async function createStudent(payload, teacherId) {
   const name = String(payload.name || "").trim();
   if (!name) throw new Error("El nombre es obligatorio.");
@@ -203,10 +198,17 @@ async function createStudent(payload, teacherId) {
     const { data, error } = await client.from("students").insert(row).select("*").single();
     if (!error && data) {
       const student = mapStudent(data, window.SUBJECTS);
-      syncStudentHelpers([...(window.STUDENTS || []), student]);
+      const list = [...(window.STUDENTS || []), student];
+      syncStudentHelpers(list);
+      saveLocalStudents(teacherId, list);
       return student;
     }
-    if (error) console.warn("[ALIS] createStudent Supabase:", error.message);
+    const msg = error?.message || "No se pudo guardar en Supabase.";
+    console.warn("[ALIS] createStudent Supabase:", msg);
+    throw new Error(
+      "No se pudo guardar el alumno en la nube. " +
+      "Ejecuta supabase/mvp-setup.sql en el SQL Editor de Supabase. Detalle: " + msg
+    );
   }
 
   const student = mapStudent(row, window.SUBJECTS);
@@ -243,9 +245,12 @@ async function updateStudent(studentId, payload, teacherId) {
       const student = mapStudent(data, window.SUBJECTS);
       const list = (window.STUDENTS || []).map((s) => (s.id === studentId ? student : s));
       syncStudentHelpers(list);
+      saveLocalStudents(teacherId, list);
       return student;
     }
-    if (error) console.warn("[ALIS] updateStudent Supabase:", error.message);
+    const msg = error?.message || "No se pudo actualizar en Supabase.";
+    console.warn("[ALIS] updateStudent Supabase:", msg);
+    throw new Error("No se pudo actualizar el alumno. Detalle: " + msg);
   }
 
   const list = (window.STUDENTS || []).map((s) => {
@@ -277,12 +282,14 @@ async function deleteStudent(studentId, teacherId) {
       .delete()
       .eq("id", studentId)
       .eq("teacher_id", teacherId);
-    if (error) console.warn("[ALIS] deleteStudent Supabase:", error.message);
-    else {
-      const list = (window.STUDENTS || []).filter((s) => s.id !== studentId);
-      syncStudentHelpers(list);
-      return true;
+    if (error) {
+      console.warn("[ALIS] deleteStudent Supabase:", error.message);
+      throw new Error("No se pudo eliminar el alumno. Detalle: " + error.message);
     }
+    const list = (window.STUDENTS || []).filter((s) => s.id !== studentId);
+    syncStudentHelpers(list);
+    saveLocalStudents(teacherId, list);
+    return true;
   }
 
   const list = (window.STUDENTS || []).filter((s) => s.id !== studentId);
@@ -293,7 +300,6 @@ async function deleteStudent(studentId, teacherId) {
 
 Object.assign(window, {
   mapStudent,
-  loadAlisDataFromSupabase,
   loadAlisDataForTeacher,
   createStudent,
   updateStudent,

@@ -174,6 +174,7 @@ function App({ teacher, onLogout }) {
           teacherId={teacherId}
           onClose={() => setModal(null)}
           onUploaded={() => pullFromWindow()}
+          onGenerateReinforcement={(student) => setModal({ type: "generate", student })}
         />
       )}
       {modal && modal.type === "generate" && (
