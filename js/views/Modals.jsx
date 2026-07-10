@@ -1,21 +1,6 @@
 // Modals.jsx — Upload result + Generate material (AI), subject-aware
 const { useState } = React;
 
-/** Contenido demo del generador (hasta tener IA real de material). */
-function demoMaterialFor(student) {
-  const topic = (student && student.focus) || "Tema actual";
-  return {
-    topicTitle: topic,
-    pills: [topic, student.grade, student.subject].filter(Boolean),
-    preview: [
-      `Practica: ${topic} — ejercicio 1`,
-      `Practica: ${topic} — ejercicio 2`,
-      `Practica: ${topic} — ejercicio 3`,
-      `Practica: ${topic} — ejercicio 4`,
-    ],
-  };
-}
-
 function Modal({ title, sub, icon, onClose, children, wide }) {
   return (
     <div className="modal-scrim" onClick={onClose}>
@@ -223,13 +208,16 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 }
 
 // ---------- Generate material ----------
-function GenerateModal({ preset, students, onClose }) {
+function GenerateModal({ preset, students, analysis, onClose }) {
   const list = students || [];
   const [studentId, setStudentId] = useState(preset && preset.id ? preset.id : (list[0] && list[0].id));
   const [type, setType] = useState("practica");
   const [difficulty, setDifficulty] = useState("graduada");
   const [count, setCount] = useState(8);
-  const [stage, setStage] = useState("form");
+  const [stage, setStage] = useState("form"); // form | generating | done
+  const [material, setMaterial] = useState(null);
+  const [error, setError] = useState("");
+  const [downloading, setDownloading] = useState(false);
   const student = byId(studentId) || list.find((s) => s.id === studentId);
 
   if (!student) {
@@ -241,27 +229,68 @@ function GenerateModal({ preset, students, onClose }) {
     );
   }
 
-  const c = demoMaterialFor(student);
   const types = [{ id: "practica", label: "Práctica", icon: "pencil" }, { id: "quiz", label: "Quiz", icon: "check" }, { id: "reto", label: "Reto", icon: "flag" }];
   const diffs = [{ id: "facil", label: "Fácil" }, { id: "graduada", label: "Graduada" }, { id: "avanzada", label: "Avanzada" }];
   const typeLabel = { practica: "Práctica", quiz: "Quiz", reto: "Reto" }[type];
+  const topicHint = analysis?.topicTitle || analysis?.next || student.focus || "Tema del alumno";
 
-  const generate = () => { setStage("generating"); setTimeout(() => setStage("done"), 2000); };
+  const generate = async () => {
+    setError("");
+    setStage("generating");
+    try {
+      const mat = await generateMaterial({
+        student,
+        type,
+        difficulty,
+        count,
+        analysis: analysis || null,
+      });
+      setMaterial(mat);
+      setStage("done");
+    } catch (err) {
+      setError(err.message || "No se pudo generar el material.");
+      setStage("form");
+    }
+  };
+
+  const download = () => {
+    if (!material) return;
+    setError("");
+    setDownloading(true);
+    try {
+      downloadMaterialPdf(material, student);
+    } catch (err) {
+      setError(err.message || "No se pudo descargar el PDF.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const exercises = material?.exercises || [];
+  const preview = exercises.slice(0, 8);
 
   return (
-    <Modal icon="sparkles" title="Generar material con Alis" sub="Por ahora es una demo visual. La generación real con IA es el siguiente paso." onClose={onClose} wide>
+    <Modal
+      icon="sparkles"
+      title="Generar material con Alis"
+      sub="Ejercicios reales con IA, alineados al alumno y al CNEB. Descarga el PDF cuando esté listo."
+      onClose={onClose}
+      wide
+    >
       <div className="modal-body modal-body--gen">
         {stage !== "done" ? (
           <>
             <label className="field-label">Para quién · {student.subject}</label>
-            <StudentPicker value={studentId} onChange={setStudentId} students={list} />
+            <StudentPicker value={studentId} onChange={(id) => { setStudentId(id); setError(""); }} students={list} />
 
             <div className="gen-grid">
               <div>
                 <label className="field-label">Tipo de material</label>
                 <div className="seg seg--full">
                   {types.map((tp) => (
-                    <button key={tp.id} className={"seg-btn" + (type === tp.id ? " is-on" : "")} onClick={() => setType(tp.id)}><Icon name={tp.icon} size={15} /> {tp.label}</button>
+                    <button key={tp.id} type="button" className={"seg-btn" + (type === tp.id ? " is-on" : "")} onClick={() => setType(tp.id)} disabled={stage === "generating"}>
+                      <Icon name={tp.icon} size={15} /> {tp.label}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -269,23 +298,23 @@ function GenerateModal({ preset, students, onClose }) {
                 <label className="field-label">Dificultad</label>
                 <div className="seg seg--full">
                   {diffs.map((d) => (
-                    <button key={d.id} className={"seg-btn" + (difficulty === d.id ? " is-on" : "")} onClick={() => setDifficulty(d.id)}>{d.label}</button>
+                    <button key={d.id} type="button" className={"seg-btn" + (difficulty === d.id ? " is-on" : "")} onClick={() => setDifficulty(d.id)} disabled={stage === "generating"}>
+                      {d.label}
+                    </button>
                   ))}
                 </div>
               </div>
             </div>
 
-            <label className="field-label">Tema (sugerido por Alis)</label>
+            <label className="field-label">Tema (según alumno / análisis)</label>
             <div className="topic-pills">
-              {c.pills.map((p, i) => (
-                <span key={p} className={"topic-pill" + (i === 0 ? " is-on" : "")}>{p}{i === 0 && <Icon name="check" size={13} />}</span>
-              ))}
-              <span className="topic-pill topic-pill--add"><Icon name="plus" size={13} /> Otro</span>
+              <span className="topic-pill is-on">{topicHint}<Icon name="check" size={13} /></span>
             </div>
 
             <label className="field-label">Cantidad de ejercicios · {count}</label>
-            <input className="range" type="range" min="4" max="16" value={count} onChange={(e) => setCount(+e.target.value)} />
+            <input className="range" type="range" min="4" max="16" value={count} onChange={(e) => setCount(+e.target.value)} disabled={stage === "generating"} />
 
+            {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
             {stage === "generating" && (
               <div className="analyzing"><span className="spinner" />Alis está creando {count} ejercicios de {typeLabel.toLowerCase()} para {student.name.split(" ")[0]}…</div>
             )}
@@ -294,17 +323,28 @@ function GenerateModal({ preset, students, onClose }) {
           <div className="gen-result">
             <div className="gen-result-head">
               <div>
-                <p className="gen-result-title">{typeLabel} · {c.topicTitle}</p>
-                <p className="gen-result-sub">{count} ejercicios · dificultad {difficulty} · {student.name}</p>
+                <p className="gen-result-title">{typeLabel} · {material?.topic || topicHint}</p>
+                <p className="gen-result-sub">{exercises.length} ejercicios · dificultad {difficulty} · {student.name}</p>
               </div>
               <span className="minedu-tag"><Icon name="check" size={13} /> Alineado MINEDU</span>
             </div>
             <div className="gen-preview">
-              {c.preview.map((q, i) => (
-                <div className="gen-ex" key={i}><span className="gen-ex-n">{i + 1}</span><span className="gen-ex-q">{q}</span></div>
+              {preview.map((ex, i) => (
+                <div className="gen-ex" key={i}>
+                  <span className="gen-ex-n">{ex.n || i + 1}</span>
+                  <span className="gen-ex-q">{ex.prompt}</span>
+                </div>
               ))}
-              <div className="gen-more">+ {Math.max(count - 4, 0)} ejercicios más…</div>
+              {exercises.length > preview.length && (
+                <div className="gen-more">+ {exercises.length - preview.length} ejercicios más en el PDF…</div>
+              )}
             </div>
+            {material?.teacherNotes && (
+              <div className="result-next" style={{ marginTop: 10 }}>
+                <span><strong>Nota docente:</strong> {material.teacherNotes}</span>
+              </div>
+            )}
+            {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
           </div>
         )}
       </div>
@@ -312,20 +352,18 @@ function GenerateModal({ preset, students, onClose }) {
       <div className="modal-foot">
         {stage === "done" ? (
           <>
-            <button className="btn btn--ghost" onClick={onClose}>Descartar</button>
-            <button
-              className="btn btn--ghost"
-              type="button"
-              onClick={() => alert("La descarga real de PDF aún no está activa. El generador de material con IA es el siguiente paso del MVP.")}
-            >
-              <Icon name="download" size={16} /> Descargar PDF
+            <button className="btn btn--ghost" type="button" onClick={() => { setStage("form"); setMaterial(null); setError(""); }}>Volver</button>
+            <button className="btn btn--ghost" type="button" onClick={download} disabled={downloading}>
+              <Icon name="download" size={16} /> {downloading ? "Descargando…" : "Descargar PDF"}
             </button>
-            <button className="btn btn--primary" onClick={onClose}><Icon name="check" size={16} /> Listo</button>
+            <button className="btn btn--primary" type="button" onClick={onClose}><Icon name="check" size={16} /> Listo</button>
           </>
         ) : (
           <>
-            <button className="btn btn--ghost" onClick={onClose}>Cancelar</button>
-            <button className="btn btn--primary" disabled={stage === "generating"} onClick={generate}><Icon name="sparkles" size={16} /> Generar con Alis</button>
+            <button className="btn btn--ghost" type="button" onClick={onClose} disabled={stage === "generating"}>Cancelar</button>
+            <button className="btn btn--primary" type="button" disabled={stage === "generating"} onClick={generate}>
+              <Icon name="sparkles" size={16} /> {stage === "generating" ? "Generando…" : "Generar con Alis"}
+            </button>
           </>
         )}
       </div>

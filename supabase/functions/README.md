@@ -1,22 +1,33 @@
-# Desplegar analyze-evidence
+# Edge Functions ALIS
 
-El secret `ANTHROPIC_API_KEY` ya debe existir en Edge Functions → Secrets.
+Secret requerido (ya en el proyecto): `ANTHROPIC_API_KEY`
 
-## Opción A — Desde el dashboard (sin CLI)
+## Funciones
 
-1. Edge Functions → **Functions** → **Via Editor** / Deploy your first function  
-2. Nombre de la función: `analyze-evidence`  
-3. Borra el código de ejemplo y pega el contenido de:
-   `supabase/functions/analyze-evidence/index.ts`  
+| Nombre | Para qué |
+|---|---|
+| `analyze-evidence` | Lee foto/PDF y analiza con Haiku |
+| `generate-material` | Genera ejercicios de refuerzo con Haiku |
+
+## Desplegar (dashboard)
+
+Para **cada** función:
+
+1. Edge Functions → **Functions** → Via Editor / Deploy  
+2. Nombre exacto: `analyze-evidence` o `generate-material`  
+3. Pega el código de:
+   - `supabase/functions/analyze-evidence/index.ts`
+   - `supabase/functions/generate-material/index.ts`
 4. **Deploy**
 
-## Opción B — CLI
+## URLs
+
+- `https://bnmaxhwysrtrodmxxujy.supabase.co/functions/v1/analyze-evidence`
+- `https://bnmaxhwysrtrodmxxujy.supabase.co/functions/v1/generate-material`
+
+## CLI (opcional)
 
 ```bash
-npx supabase login
-npx supabase link --project-ref bnmaxhwysrtrodmxxujy
 npx supabase functions deploy analyze-evidence
+npx supabase functions deploy generate-material
 ```
-
-La URL quedará:
-`https://bnmaxhwysrtrodmxxujy.supabase.co/functions/v1/analyze-evidence`

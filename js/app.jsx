@@ -174,11 +174,16 @@ function App({ teacher, onLogout }) {
           teacherId={teacherId}
           onClose={() => setModal(null)}
           onUploaded={() => pullFromWindow()}
-          onGenerateReinforcement={(student) => setModal({ type: "generate", student })}
+          onGenerateReinforcement={(student, analysis) => setModal({ type: "generate", student, analysis })}
         />
       )}
       {modal && modal.type === "generate" && (
-        <GenerateModal preset={modal.student} students={modalStudents} onClose={() => setModal(null)} />
+        <GenerateModal
+          preset={modal.student}
+          students={modalStudents}
+          analysis={modal.analysis || null}
+          onClose={() => setModal(null)}
+        />
       )}
       {modal && modal.type === "student-form" && (
         <StudentFormModal
