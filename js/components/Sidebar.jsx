@@ -49,7 +49,7 @@ function Sidebar({ route, activeSubject, onNavigate, onSubject, onRuta, onLogout
   return (
     <aside className="sidebar">
       <button type="button" className="sb-brand" onClick={() => onNavigate({ view: "alumnos" })} title="Ir a Alumnos">
-        <AlisLogo variant="sidebar" />
+        <img src={(window.__resources && window.__resources.alisLogo) || "assets/alis-logo.png"} alt="ALIS by Fibee" className="sb-logo" />
       </button>
 
       <SubjectSelector activeSubject={activeSubject} onChange={onSubject} />

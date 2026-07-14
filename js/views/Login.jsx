@@ -35,7 +35,11 @@ function LoginView({ onSuccess }) {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo-wrap">
-          <AlisLogo variant="stack" />
+          <img
+            src={(window.__resources && window.__resources.alisLogo) || "assets/images/alis-logo.png"}
+            alt="ALIS"
+            className="login-logo"
+          />
         </div>
 
         <h1 className="login-title">Bienvenido a Alis</h1>
