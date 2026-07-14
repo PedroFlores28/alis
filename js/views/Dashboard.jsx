@@ -1,5 +1,5 @@
 // Dashboard.jsx — SubjectHome: the "Alumnos" view, scoped to the active subject
-function Topbar({ subject, students, onRuta, onEvidence }) {
+function Topbar({ subject, students }) {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
   const attn = students.filter((s) => s.status === "riesgo" || s.status === "atencion").length;
@@ -22,8 +22,6 @@ function Topbar({ subject, students, onRuta, onEvidence }) {
           <kbd>⌘K</kbd>
         </div>
         <button className="icon-pill" title="Notificaciones"><Icon name="bell" size={19} /><span className="icon-pill-dot" /></button>
-        <button className="btn btn--ghost" onClick={onRuta}><Icon name="target" size={18} /> Ruta pedagógica</button>
-        <button className="btn btn--primary" onClick={onEvidence}><Icon name="upload" size={18} /> Subir resultado y generar material</button>
       </div>
     </header>
   );
@@ -90,7 +88,7 @@ function SuggestionCard({ s, onOpen, onAct, onDismiss }) {
   );
 }
 
-function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onRuta, onEvidence, onAddStudent, onDismissSuggestion }) {
+function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onAddStudent, onDismissSuggestion }) {
   const shown = students.filter((s) => {
     if (t.filter === "todos") return true;
     if (t.filter === "riesgo") return s.status === "riesgo" || s.status === "atencion";
@@ -98,7 +96,7 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
   });
   return (
     <div className="view">
-      <Topbar subject={subject} students={students} onRuta={onRuta} onEvidence={onEvidence} />
+      <Topbar subject={subject} students={students} />
       <div className="view-body">
         <KpiStrip students={students} />
         <div className="grid-2">

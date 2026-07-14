@@ -124,14 +124,6 @@ function StudentCard({ student, variant, onOpen, onUpload }) {
         </div>
         <ProgressBar value={student.progress} status={student.status} />
       </div>
-      <div className="scard-actions">
-        <button className="qbtn" onClick={(e) => stop(e, onOpen)}>
-          <Icon name="eye" size={16} /> Ver perfil
-        </button>
-        <button className="qbtn" onClick={(e) => stop(e, onUpload)}>
-          <Icon name="upload" size={16} /> Subir resultado
-        </button>
-      </div>
     </div>
   );
 }

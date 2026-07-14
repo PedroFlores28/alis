@@ -135,8 +135,6 @@ function App({ teacher, onLogout }) {
         onOpenStudent={openStudent}
         onUpload={openUpload}
         onGenerate={openGenerate}
-        onRuta={openRutaPicker}
-        onEvidence={openEvidencePicker}
         onAddStudent={openAddStudent}
         onDismissSuggestion={onDismissSuggestion}
       />
