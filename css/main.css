@@ -409,6 +409,25 @@ input{font-family:inherit}
 .ruta-node-text{font-size:13.5px;color:var(--muted);line-height:1.5;flex:1}
 .ruta-node-pct{font-size:22px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
 .ruta-arrow{display:grid;place-items:center;color:var(--muted)}
+.ruta-timeline-lead{font-size:13.5px;color:var(--muted);line-height:1.45;padding:0 20px 8px}
+.ruta-timeline{display:flex;flex-direction:column;padding:4px 16px 18px;gap:0}
+.ruta-step{display:grid;grid-template-columns:28px 1fr;gap:12px;min-height:0}
+.ruta-step-rail{display:flex;flex-direction:column;align-items:center}
+.ruta-step-dot{width:28px;height:28px;border-radius:999px;background:var(--bg);border:1.5px solid var(--line);display:grid;place-items:center;font-size:12px;font-weight:700;color:var(--ink-2);flex-shrink:0;z-index:1}
+.ruta-step.is-done .ruta-step-dot{background:var(--ink);border-color:var(--ink);color:#fff}
+.ruta-step.is-current .ruta-step-dot{background:var(--brand);border-color:var(--brand);color:var(--ink)}
+.ruta-step.is-meta .ruta-step-dot{border-color:var(--brand)}
+.ruta-step-line{width:2px;flex:1;min-height:14px;background:var(--line);margin:4px 0}
+.ruta-step-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh-sm)}
+.ruta-step.is-current .ruta-step-card{border-color:var(--brand)}
+.ruta-step.is-meta .ruta-step-card{background:linear-gradient(180deg,oklch(0.99 0.02 95),var(--surface))}
+.ruta-step-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px}
+.ruta-step-kind{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.ruta-step-status{font-size:12px;font-weight:600;color:var(--ink-2)}
+.ruta-step.is-current .ruta-step-status{color:var(--ink)}
+.ruta-step-title{font-size:15px;font-weight:700;letter-spacing:-.01em;margin:0 0 4px}
+.ruta-step-why{font-size:13px;color:var(--muted);line-height:1.45;margin:0}
+.ruta-step-actions{margin-top:12px;display:flex;justify-content:flex-end}
 @media(max-width:900px){
   .ruta-flow{grid-template-columns:1fr}
   .ruta-arrow{transform:rotate(90deg)}

@@ -55,7 +55,11 @@ function App({ teacher, onLogout }) {
   const navigate = (r) => { setRoute({ ...r, student: null }); };
   const changeSubject = (sid) => { setActiveSubject(sid); setFilter("todos"); setRoute({ view: "alumnos", student: null }); };
   const openUpload = (s) => setModal({ type: "upload", student: s || null });
-  const openGenerate = (s) => setModal({ type: "generate", student: (s && s.id) ? s : null });
+  const openGenerate = (s, analysisHint) => setModal({
+    type: "generate",
+    student: (s && s.id) ? s : null,
+    analysis: analysisHint || null,
+  });
   const openAddStudent = () => setModal({ type: "student-form", student: null });
   const openEditStudent = (s) => setModal({ type: "student-form", student: s });
   const openEditHistory = (student, entry, entryKey) => setModal({ type: "edit-history", student, entry, entryKey });

@@ -19,6 +19,7 @@ function mapStudent(row, subjects) {
     note: row.note || "",
     topics: row.topics || [],
     history: row.history || [],
+    learningPath: row.learning_path || null,
     teacherId: row.teacher_id || null,
   };
 }

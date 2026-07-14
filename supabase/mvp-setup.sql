@@ -5,6 +5,9 @@
 ALTER TABLE students
   ADD COLUMN IF NOT EXISTS teacher_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
 
+ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS learning_path JSONB DEFAULT NULL;
+
 CREATE INDEX IF NOT EXISTS students_teacher_id_idx ON students (teacher_id);
 
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;

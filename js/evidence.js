@@ -166,6 +166,9 @@ async function uploadEvidence({ teacherId, student, file }) {
   if (typeof applyAnalysisToStudent === "function") {
     applyAnalysisToStudent(student.id, teacherId, analysis);
   }
+  if (typeof applyLearningPathFromAnalysis === "function") {
+    await applyLearningPathFromAnalysis(student.id, teacherId, analysis);
+  }
   if (typeof createSuggestionFromAnalysis === "function") {
     await createSuggestionFromAnalysis(teacherId, student, analysis);
   }

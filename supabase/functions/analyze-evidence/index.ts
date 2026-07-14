@@ -107,7 +107,22 @@ Devuelve este JSON exacto:
   "cnebPerformance": string|null,
   "obs": [{"ok": boolean, "t": string}],
   "next": string,
-  "summary": string
+  "summary": string,
+  "gaps": [string],
+  "learningPath": {
+    "estimate": number,
+    "goal": string,
+    "sessions": [
+      {
+        "id": string,
+        "order": number,
+        "title": string,
+        "why": string,
+        "kind": "diagnostico"|"puente"|"meta",
+        "status": "done"|"current"|"pending"
+      }
+    ]
+  }
 }
 
 Reglas:
@@ -115,6 +130,13 @@ Reglas:
 - status según desempeño vs CNEB.
 - obs: 3 a 5 puntos concretos (aciertos y errores).
 - next: sugerencia breve de refuerzo alineada al CNEB.
+- gaps: 1 a 3 prerequisitos que le faltan (más básicos que el tema de la tarea).
+- learningPath: línea de sesiones de lo MÁS FÁCIL / básico hacia la META.
+  - Sesión 1 kind=diagnostico status=done (punto de partida de la evidencia).
+  - Luego 1–3 kind=puente (prerequisitos; nunca saltes directo a la meta si hay huecos).
+  - Última kind=meta = el objetivo de la tarea o CNEB (lo más difícil de esta ruta).
+  - Si el alumno no sabe sumar y la tarea era multiplicación: puentes de suma/resta ANTES de multiplicación.
+  - estimate = cantidad de sesiones de la ruta.
 - Sé honesto si la imagen es ilegible.`;
 
     const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
@@ -126,7 +148,7 @@ Reglas:
       },
       body: JSON.stringify({
         model: "claude-haiku-4-5",
-        max_tokens: 1200,
+        max_tokens: 1800,
         messages: [
           {
             role: "user",

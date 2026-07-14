@@ -1,4 +1,4 @@
-// RutaPedagogica.jsx — nivel actual → objetivo CNEB del grado/materia
+// RutaPedagogica.jsx — nivel actual → objetivo CNEB + línea de tiempo de sesiones
 function RutaPedagogicaView({ student, onBack, onGenerate }) {
   if (!student) {
     return (
@@ -13,6 +13,18 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
   }
 
   const cneb = cnebForStudent(student);
+  const path = typeof learningPathForStudent === "function"
+    ? learningPathForStudent(student)
+    : null;
+  const sessions = path?.sessions || [];
+
+  const kindLabel = (kind) =>
+    kind === "diagnostico" ? "Diagnóstico" :
+    kind === "meta" ? "Meta" : "Puente";
+
+  const statusLabel = (status) =>
+    status === "done" ? "Hecha" :
+    status === "current" ? "En curso" : "Pendiente";
 
   return (
     <div className="view">
@@ -69,24 +81,58 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
           <div className="panel-head">
             <div className="panel-head-l">
               <span className="ai-badge"><Icon name="sparkles" size={16} /></span>
-              <h2 className="panel-title">Sugerencia de ruta</h2>
+              <h2 className="panel-title">Línea de sesiones</h2>
             </div>
+            {path?.estimate ? (
+              <span className="panel-sub-inline">
+                ~{path.estimate} {path.estimate === 1 ? "sesión" : "sesiones"} hacia la meta
+              </span>
+            ) : null}
           </div>
-          <div className="sugg-list">
-            <div className="sugg">
-              <p className="sugg-title">Próximo paso recomendado</p>
-              <p className="sugg-text">
-                {cneb
-                  ? `Partiendo de “${student.focus || "el nivel actual"}”, Alis sugiere prácticas hacia: ${cneb.capacity}. Tú eliges el tema concreto; el CNEB marca el objetivo.`
-                  : `Define un enfoque para ${student.name.split(" ")[0]} y genera material de refuerzo.`}
-              </p>
-              <div className="sugg-foot">
-                <span className="sugg-tag">CNEB</span>
-                <button className="btn btn--primary btn--sm" onClick={() => onGenerate(student)}>
-                  Generar práctica <Icon name="arrowUpRight" size={15} />
-                </button>
+
+          <p className="ruta-timeline-lead">
+            Del más básico al objetivo. Si la evidencia muestra huecos previos, primero se recuperan esas bases.
+          </p>
+
+          <div className="ruta-timeline">
+            {sessions.map((s, i) => (
+              <div
+                key={s.id || i}
+                className={
+                  "ruta-step" +
+                  (s.status === "done" ? " is-done" : "") +
+                  (s.status === "current" ? " is-current" : "") +
+                  (s.kind === "meta" ? " is-meta" : "")
+                }
+              >
+                <div className="ruta-step-rail" aria-hidden="true">
+                  <span className="ruta-step-dot">{s.status === "done" ? <Icon name="check" size={12} /> : s.order}</span>
+                  {i < sessions.length - 1 ? <span className="ruta-step-line" /> : null}
+                </div>
+                <div className="ruta-step-card">
+                  <div className="ruta-step-top">
+                    <span className="ruta-step-kind">{kindLabel(s.kind)}</span>
+                    <span className="ruta-step-status">{statusLabel(s.status)}</span>
+                  </div>
+                  <p className="ruta-step-title">{s.title}</p>
+                  <p className="ruta-step-why">{s.why}</p>
+                  {s.kind !== "diagnostico" ? (
+                    <div className="ruta-step-actions">
+                      <button
+                        className="btn btn--primary btn--sm"
+                        onClick={() => onGenerate(student, {
+                          topicTitle: s.title,
+                          next: s.why,
+                          summary: `Sesión ${s.order}: ${s.title}. ${s.why}`,
+                        })}
+                      >
+                        Generar práctica <Icon name="arrowUpRight" size={15} />
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         </section>
       </div>
