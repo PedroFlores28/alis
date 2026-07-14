@@ -58,6 +58,7 @@ function App({ teacher, onLogout }) {
   const openGenerate = (s) => setModal({ type: "generate", student: (s && s.id) ? s : null });
   const openAddStudent = () => setModal({ type: "student-form", student: null });
   const openEditStudent = (s) => setModal({ type: "student-form", student: s });
+  const openEditHistory = (student, entry, entryKey) => setModal({ type: "edit-history", student, entry, entryKey });
 
   const askStudentThen = (next) => setModal({ type: "pick", next });
   const openRutaPicker = () => askStudentThen("ruta");
@@ -84,6 +85,12 @@ function App({ teacher, onLogout }) {
     setRoute({ view: "alumnos", student: null });
   };
 
+  const onHistorySaved = (saved) => {
+    pullFromWindow();
+    setModal(null);
+    if (route.view === "perfil" && saved) setRoute({ view: "perfil", student: saved });
+  };
+
   const onDismissSuggestion = (s) => {
     if (!s?.id) return;
     if (typeof dismissSuggestion === "function") dismissSuggestion(teacherId, s.id);
@@ -104,6 +111,7 @@ function App({ teacher, onLogout }) {
         onUpload={openUpload}
         onGenerate={openGenerate}
         onEdit={openEditStudent}
+        onEditHistory={openEditHistory}
       />
     );
   } else if (route.view === "ruta") {
@@ -197,6 +205,17 @@ function App({ teacher, onLogout }) {
           teacherId={teacherId}
           onSaved={onStudentSaved}
           onDeleted={onStudentDeleted}
+          onClose={() => setModal(null)}
+        />
+      )}
+      {modal && modal.type === "edit-history" && (
+        <EditHistoryModal
+          student={modal.student}
+          entry={modal.entry}
+          entryKey={modal.entryKey}
+          teacherId={teacherId}
+          onSaved={onHistorySaved}
+          onDeleted={onHistorySaved}
           onClose={() => setModal(null)}
         />
       )}

@@ -22,7 +22,7 @@ function ProfileTopbar({ student, onBack, onUpload, onGenerate, onEdit }) {
   );
 }
 
-function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit }) {
+function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditHistory }) {
   const s = STATUS[student.status];
   return (
     <div className="view">
@@ -86,13 +86,13 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit }) {
           <section className="panel">
             <div className="panel-head">
               <h2 className="panel-title">Resultados recientes</h2>
-              <button className="link-btn">Historial</button>
             </div>
             <div className="history">
               {(student.history || []).length ? student.history.map((h, i) => {
                 const st = h.score == null ? "normal" : h.score >= 75 ? "destacado" : h.score >= 60 ? "normal" : h.score >= 50 ? "atencion" : "riesgo";
+                const entryKey = typeof historyEntryKey === "function" ? historyEntryKey(h, i) : (h.id || i);
                 return (
-                  <div className="hrow" key={i}>
+                  <div className="hrow" key={entryKey}>
                     <span className="hrow-icon"><Icon name="file" size={17} /></span>
                     <span className="hrow-main">
                       <span className="hrow-label">{h.label}</span>
@@ -101,6 +101,14 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit }) {
                     <span className="hrow-score" style={{ color: STATUS[st].dot }}>
                       {h.score == null ? "—" : h.score + "%"}
                     </span>
+                    <button
+                      type="button"
+                      className="hrow-edit"
+                      title="Editar resultado"
+                      onClick={() => onEditHistory?.(student, h, entryKey)}
+                    >
+                      <Icon name="pencil" size={15} />
+                    </button>
                   </div>
                 );
               }) : (

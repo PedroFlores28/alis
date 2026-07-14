@@ -373,6 +373,81 @@ function GenerateModal({ preset, students, analysis, onClose }) {
 
 const GRADES = ["1° Secundaria", "2° Secundaria", "3° Secundaria"];
 
+function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDeleted, onClose }) {
+  const [label, setLabel] = useState(entry?.label || "");
+  const [score, setScore] = useState(entry?.score == null ? "" : String(entry.score));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const save = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const saved = await updateStudentHistoryEntry(student.id, teacherId, entryKey, { label, score });
+      onSaved?.(saved);
+    } catch (err) {
+      setError(err.message || "No se pudo guardar.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const remove = async () => {
+    if (!confirm("¿Eliminar este resultado del historial?")) return;
+    setLoading(true);
+    try {
+      const saved = await deleteStudentHistoryEntry(student.id, teacherId, entryKey);
+      onDeleted?.(saved);
+    } catch (err) {
+      setError(err.message || "No se pudo eliminar.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal
+      icon="pencil"
+      title="Editar resultado"
+      sub={entry?.fileName ? `Evidencia · ${entry.fileName}` : "Corrige el título o la nota de este resultado."}
+      onClose={onClose}
+    >
+      <div className="modal-body">
+        <label className="field-label">Título</label>
+        <input
+          className="form-input"
+          value={label}
+          onChange={(e) => setLabel(e.target.value)}
+          placeholder="Ej. Ecuaciones cuadráticas"
+          disabled={loading}
+        />
+
+        <label className="field-label">Nota (%)</label>
+        <input
+          className="form-input"
+          type="number"
+          min="0"
+          max="100"
+          value={score}
+          onChange={(e) => setScore(e.target.value)}
+          placeholder="0–100 (vacío = sin nota)"
+          disabled={loading}
+        />
+
+        {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
+      </div>
+      <div className="modal-foot">
+        <button className="btn btn--ghost" style={{ marginRight: "auto", color: "var(--risk-ink)" }} onClick={remove} disabled={loading}>
+          Eliminar
+        </button>
+        <button className="btn btn--ghost" onClick={onClose} disabled={loading}>Cancelar</button>
+        <button className="btn btn--primary" onClick={save} disabled={loading || !label.trim()}>
+          {loading ? "Guardando…" : "Guardar"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function StudentFormModal({ student, defaultSubjectId, teacherId, onSaved, onDeleted, onClose }) {
   const editing = !!(student && student.id);
   const [name, setName] = useState(student?.name || "");
@@ -462,4 +537,4 @@ function StudentFormModal({ student, defaultSubjectId, teacherId, onSaved, onDel
   );
 }
 
-Object.assign(window, { UploadModal, GenerateModal, PickStudentModal, StudentFormModal });
+Object.assign(window, { UploadModal, GenerateModal, PickStudentModal, StudentFormModal, EditHistoryModal });

@@ -154,6 +154,7 @@ async function uploadEvidence({ teacherId, student, file }) {
   const score = analysis?.score;
   const topic = analysis?.topicTitle || file.name;
   await appendStudentHistory(student.id, teacherId, {
+    id: "h-" + Date.now(),
     label: topic,
     date: "Hoy",
     score: score == null ? null : Number(score),
@@ -212,4 +213,90 @@ async function appendStudentHistory(studentId, teacherId, entry) {
   }
 }
 
-Object.assign(window, { uploadEvidence, isUuid, callAnalyzeEvidence });
+function historyEntryKey(entry, index) {
+  return entry?.id || ("idx-" + index);
+}
+
+function findHistoryIndex(history, entryKey) {
+  const list = history || [];
+  const byId = list.findIndex((h) => h && h.id && h.id === entryKey);
+  if (byId >= 0) return byId;
+  if (String(entryKey).startsWith("idx-")) {
+    const idx = Number(String(entryKey).slice(4));
+    return Number.isInteger(idx) && idx >= 0 && idx < list.length ? idx : -1;
+  }
+  const asNum = Number(entryKey);
+  return Number.isInteger(asNum) && asNum >= 0 && asNum < list.length ? asNum : -1;
+}
+
+async function persistStudentHistory(studentId, teacherId, history, sessions) {
+  const patch = { history, sessions, lastSession: sessions > 0 ? "Hoy" : "—" };
+  const list = (window.STUDENTS || []).map((s) =>
+    s.id === studentId ? { ...s, ...patch } : s
+  );
+  syncStudentHelpers(list);
+  if (window.saveLocalStudents) saveLocalStudents(teacherId, list);
+
+  const client = window.supabaseClient;
+  if (client && isUuid(teacherId)) {
+    const { error } = await client
+      .from("students")
+      .update({ history, sessions, last_session: patch.lastSession })
+      .eq("id", studentId)
+      .eq("teacher_id", teacherId);
+    if (error) throw new Error(error.message || "No se pudo guardar el historial.");
+  }
+  return list.find((s) => s.id === studentId);
+}
+
+async function updateStudentHistoryEntry(studentId, teacherId, entryKey, patch) {
+  const current = (window.STUDENTS || []).find((s) => s.id === studentId);
+  if (!current) throw new Error("Alumno no encontrado.");
+  const history = [...(current.history || [])];
+  const idx = findHistoryIndex(history, entryKey);
+  if (idx < 0) throw new Error("Resultado no encontrado.");
+
+  const label = String(patch.label || "").trim();
+  if (!label) throw new Error("El título es obligatorio.");
+
+  let score = patch.score;
+  if (score === "" || score == null) score = null;
+  else {
+    score = Number(score);
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
+      throw new Error("La nota debe ser un número entre 0 y 100.");
+    }
+    score = Math.round(score);
+  }
+
+  const prev = history[idx] || {};
+  history[idx] = {
+    ...prev,
+    id: prev.id || ("h-" + Date.now() + "-" + idx),
+    label,
+    score,
+  };
+
+  return persistStudentHistory(studentId, teacherId, history, current.sessions || history.length);
+}
+
+async function deleteStudentHistoryEntry(studentId, teacherId, entryKey) {
+  const current = (window.STUDENTS || []).find((s) => s.id === studentId);
+  if (!current) throw new Error("Alumno no encontrado.");
+  const history = [...(current.history || [])];
+  const idx = findHistoryIndex(history, entryKey);
+  if (idx < 0) throw new Error("Resultado no encontrado.");
+
+  history.splice(idx, 1);
+  const sessions = Math.max(0, (current.sessions || 0) - 1);
+  return persistStudentHistory(studentId, teacherId, history, sessions);
+}
+
+Object.assign(window, {
+  uploadEvidence,
+  isUuid,
+  callAnalyzeEvidence,
+  historyEntryKey,
+  updateStudentHistoryEntry,
+  deleteStudentHistoryEntry,
+});
