@@ -25,7 +25,7 @@ input{font-family:inherit}
 
 /* ---------- Sidebar ---------- */
 .sidebar{width:264px;flex-shrink:0;background:var(--sidebar);color:var(--sidebar-ink);display:flex;flex-direction:column;padding:20px 14px;gap:4px;border-right:1px solid var(--sidebar-line)}
-.sb-brand{padding:6px 8px 18px}
+.sb-brand{padding:6px 8px 18px;display:block;background:none;border:0;cursor:pointer;width:100%;text-align:left}
 .sb-logo{height:46px;width:auto;display:block}
 .sb-section-label{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--sidebar-muted);font-weight:600;padding:6px 12px 8px}
 .sb-nav{display:flex;flex-direction:column;gap:3px}
