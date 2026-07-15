@@ -29,10 +29,19 @@ const Icon = ({ name, size = 20, stroke = 1.6, style }) => {
     download: <><path {...p} d="M12 4v12" /><path {...p} d="m7.5 11.5 4.5 4.5 4.5-4.5" /><path {...p} d="M4 18v.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V18" /></>,
     eye: <><path {...p} d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" /><circle {...p} cx="12" cy="12" r="2.8" /></>,
     pencil: <><path {...p} d="M4 20h4L19 9l-4-4L4 16z" /><path {...p} d="m13.5 6.5 4 4" /></>,
-    // subject icons
+    // subject / area icons
     mate: <><rect {...p} x="4" y="4" width="16" height="16" rx="2.5" /><path {...p} d="M8 9.5h3M9.5 8v3" /><path {...p} d="M14 9.5h2.5" /><path {...p} d="M8 15h3M14 14h2.5M14 16h2.5" /></>,
     ingles: <><circle {...p} cx="12" cy="12" r="8.5" /><path {...p} d="M3.5 12h17" /><path {...p} d="M12 3.5c2.4 2.3 3.7 5.3 3.7 8.5s-1.3 6.2-3.7 8.5c-2.4-2.3-3.7-5.3-3.7-8.5S9.6 5.8 12 3.5Z" /></>,
     comunicacion: <><path {...p} d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4z" /><path {...p} d="M8 9h8M8 12h5" /></>,
+    dpcc: <><circle {...p} cx="12" cy="8" r="3" /><path {...p} d="M5 20c1.5-3.5 4-5 7-5s5.5 1.5 7 5" /><path {...p} d="M16 5.5 18 3.5M19 8h2.5" /></>,
+    edufisica: <><circle {...p} cx="12" cy="5.5" r="2" /><path {...p} d="M12 8v5M9 11h6M8 21l4-8 4 8" /></>,
+    arte: <><circle {...p} cx="8" cy="10" r="3" /><circle {...p} cx="15" cy="8" r="2.5" /><circle {...p} cx="14" cy="15" r="3" /><path {...p} d="M4 19h16" /></>,
+    castellano2: <><path {...p} d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9A1.5 1.5 0 0 1 18.5 16H9l-4 4z" /><path {...p} d="M8 9h3M13 9h3M8 12h8" /></>,
+    ccss: <><path {...p} d="M4 19V6l8-2 8 2v13" /><path {...p} d="M12 4v15M8 10h.01M8 14h.01M16 10h.01M16 14h.01" /></>,
+    cyt: <><circle {...p} cx="12" cy="12" r="3" /><path {...p} d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1" /></>,
+    ept: <><path {...p} d="M4 8h16v11H4z" /><path {...p} d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8" /><path {...p} d="M4 13h16" /></>,
+    tic: <><rect {...p} x="3.5" y="5" width="17" height="12" rx="2" /><path {...p} d="M8 20h8M12 17v3" /></>,
+    tutoria: <><path {...p} d="M12 3.5 19 7v5c0 4-3 6.5-7 8.5C8 18.5 5 16 5 12V7z" /><path {...p} d="m9 12 2 2 4-4" /></>,
   };
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} style={{ display: "block", flexShrink: 0, ...style }} aria-hidden="true">
@@ -45,8 +54,17 @@ const TEACHER = { name: "Docente", plan: "Plan Tutor", initials: "DO" };
 
 const SUBJECTS = [
   { id: "mate", name: "Matemática", short: "Mat.", icon: "mate" },
-  { id: "ingles", name: "Inglés", short: "Ing.", icon: "ingles" },
   { id: "comunicacion", name: "Comunicación", short: "Com.", icon: "comunicacion" },
+  { id: "ingles", name: "Inglés", short: "Ing.", icon: "ingles" },
+  { id: "cyt", name: "Ciencia y Tecnología", short: "CyT", icon: "cyt" },
+  { id: "ccss", name: "Ciencias Sociales", short: "CC.SS.", icon: "ccss" },
+  { id: "dpcc", name: "Desarrollo Personal, Ciudadanía y Cívica", short: "DPCC", icon: "dpcc" },
+  { id: "edufisica", name: "Educación Física", short: "Ed. Fís.", icon: "edufisica" },
+  { id: "arte", name: "Arte y Cultura", short: "Arte", icon: "arte" },
+  { id: "ept", name: "Educación para el Trabajo", short: "EPT", icon: "ept" },
+  { id: "tic", name: "Educación en TIC", short: "TIC", icon: "tic" },
+  { id: "castellano2", name: "Castellano como segunda lengua", short: "Cast. 2ª", icon: "castellano2" },
+  { id: "tutoria", name: "Tutoría", short: "Tut.", icon: "tutoria" },
 ];
 
 const STATUS = {

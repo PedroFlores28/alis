@@ -509,11 +509,21 @@ function StudentFormModal({ student, defaultSubjectId, defaultCompetenceId: defa
         <label className="field-label">Nombre completo</label>
         <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Ana Flores" disabled={loading} />
 
-        <label className="field-label">Área</label>
-        <div className="seg seg--full">
+        <label className="field-label">Área curricular</label>
+        <div className="comp-pick comp-pick--areas">
           {SUBJECTS.map((s) => (
-            <button key={s.id} type="button" className={"seg-btn" + (subjectId === s.id ? " is-on" : "")} onClick={() => changeSubject(s.id)} disabled={loading}>
-              <Icon name={s.icon} size={15} /> {s.short || s.name}
+            <button
+              key={s.id}
+              type="button"
+              className={"comp-pick-btn" + (subjectId === s.id ? " is-on" : "")}
+              onClick={() => changeSubject(s.id)}
+              disabled={loading}
+            >
+              <span className="comp-pick-icon"><Icon name={s.icon} size={16} /></span>
+              <span className="comp-pick-txt">
+                <span className="comp-pick-name">{s.name}</span>
+                <span className="comp-pick-meta">{s.short}</span>
+              </span>
             </button>
           ))}
         </div>

@@ -93,11 +93,13 @@ function inferGaps(analysis, student) {
 
   if (found.length) return found;
 
-  // Puentes genéricos por materia si no se detectan huecos explícitos
+  // Puentes genéricos por área si no se detectan huecos explícitos
   const sid = student?.subjectId;
   if (sid === "mate") return ["Operaciones básicas del tema", "Aplicar el procedimiento paso a paso"];
-  if (sid === "comunicacion") return ["Ordenar ideas (inicio–desarrollo–cierre)", "Usar conectores simples"];
+  if (sid === "comunicacion" || sid === "castellano2") return ["Ordenar ideas (inicio–desarrollo–cierre)", "Usar conectores simples"];
   if (sid === "ingles") return ["Vocabulario del tema", "Frases cortas con estructura correcta"];
+  if (sid === "cyt") return ["Observar y plantear la pregunta", "Registrar resultados con evidencia"];
+  if (sid === "ccss") return ["Ubicar el hecho en contexto", "Usar fuentes o argumentos simples"];
   return ["Repasar la base del tema", "Practicar el procedimiento guiado"];
 }
 
