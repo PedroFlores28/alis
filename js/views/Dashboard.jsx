@@ -50,7 +50,7 @@ function KpiStrip({ students }) {
     withHistory ? `${withHistory} con evidencias recientes` : "Aún sin evidencias";
 
   const kpis = [
-    { icon: "students", label: "Alumnos", value: total, foot: "En esta materia", tone: "ink" },
+    { icon: "students", label: "Alumnos", value: total, foot: "En esta competencia", tone: "ink" },
     { icon: "alert", label: "Necesitan atención", value: risk + attn, foot: `${risk} en riesgo · ${attn} atención`, tone: "risk" },
     { icon: "target", label: "Progreso promedio", value: (total ? avg : 0) + "%", foot: trendFoot, tone: "brand" },
     { icon: "cap", label: "Destacados", value: top, foot: top ? "Según estado actual" : "Ninguno aún", tone: "good" },

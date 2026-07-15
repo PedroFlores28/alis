@@ -170,7 +170,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
             <div className="result-block">
               <p className="result-h"><span className="ai-badge ai-badge--sm"><Icon name="sparkles" size={13} /></span> Lectura de Alis</p>
               <ul className="result-list">
-                {analysis.obs.map((o, i) => (
+                {(analysis.obs || []).map((o, i) => (
                   <li key={i}><Icon name={o.ok ? "check" : "alert"} size={15} style={{ color: o.ok ? "var(--good)" : "var(--risk)" }} /> {o.t}</li>
                 ))}
               </ul>

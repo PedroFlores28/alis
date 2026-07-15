@@ -112,12 +112,28 @@ function slugId(name) {
 
 function applySubjects(rows) {
   if (!rows?.length) return;
-  window.SUBJECTS = rows.map((s) => ({
-    id: s.id,
-    name: s.name,
-    short: s.short,
-    icon: s.icon,
-  }));
+  const local = window.SUBJECTS || [];
+  // Catálogo MINEDU del frontend = fuente de verdad (no reemplazar por lista incompleta de DB).
+  if (!local.length) {
+    window.SUBJECTS = rows.map((s) => ({
+      id: s.id,
+      name: s.name,
+      short: s.short,
+      icon: s.icon,
+    }));
+    return;
+  }
+  const remoteById = new Map(rows.map((s) => [s.id, s]));
+  window.SUBJECTS = local.map((s) => {
+    const remote = remoteById.get(s.id);
+    if (!remote) return s;
+    return {
+      ...s,
+      name: remote.name || s.name,
+      short: remote.short || s.short,
+      icon: remote.icon || s.icon,
+    };
+  });
 }
 
 async function loadSubjectsFromSupabase() {

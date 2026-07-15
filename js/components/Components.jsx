@@ -10,7 +10,7 @@ function Avatar({ student, size = 40 }) {
 }
 
 function StatusChip({ status, size = "md" }) {
-  const s = STATUS[status];
+  const s = STATUS[status] || STATUS.normal;
   return (
     <span className={"chip chip--" + size} style={{ background: s.chipBg, color: s.chipInk }}>
       <span className="chip-dot" style={{ background: s.dot }} />

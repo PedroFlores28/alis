@@ -70,7 +70,7 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
               <span className="panel-sub-inline">{student.subject} · {student.competenceLabel || (typeof studentCompetenceLabel === "function" ? studentCompetenceLabel(student) : "")}</span>
             </div>
             <div className="topics">
-              {student.topics.map((tp) => {
+              {(student.topics || []).length ? (student.topics || []).map((tp) => {
                 const st = tp.score >= 75 ? "destacado" : tp.score >= 60 ? "normal" : tp.score >= 50 ? "atencion" : "riesgo";
                 return (
                   <div className="topic" key={tp.name}>
@@ -79,7 +79,9 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
                     <span className="topic-score">{tp.score}%</span>
                   </div>
                 );
-              })}
+              }) : (
+                <div className="sugg-empty"><Icon name="target" size={18} /> Aún sin dominio por tema. Sube evidencias para alimentarlo.</div>
+              )}
             </div>
           </section>
 

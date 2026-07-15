@@ -12,7 +12,7 @@ const COMPETENCIES = [
   {
     id: "c16", code: 16, subjectId: "dpcc", short: "Convivencia",
     competence: "Convive y participa democráticamente en la búsqueda del bien común",
-    capacity: "Interactúa con los demás y deliberar sobre asuntos públicos",
+    capacity: "Interactúa con los demás y delibera sobre asuntos públicos",
     performance: "Participa en la convivencia democrática y el bien común.",
   },
 
