@@ -96,7 +96,7 @@ function downloadMaterialPdf(material, student) {
   write("ALIS — Material de refuerzo", 14, "bold");
   write(`${typeLabel} · ${material.topic || material.title || "Tema"}`, 12, "bold");
   write(
-    `Alumno: ${student?.name || ""}  |  Grado: ${student?.grade || ""}  |  Materia: ${student?.subject || ""}`,
+    `Alumno: ${student?.name || ""}  |  Área: ${student?.subject || ""}  |  Competencia: ${student?.competenceLabel || student?.competenceId || ""}`,
     10,
     "normal"
   );

@@ -8,6 +8,9 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 function App({ teacher, onLogout }) {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
   const [activeSubject, setActiveSubject] = useState("mate");
+  const [activeCompetence, setActiveCompetence] = useState(() =>
+    (typeof defaultCompetenceId === "function" ? defaultCompetenceId("mate") : "c23")
+  );
   const [route, setRoute] = useState({ view: "alumnos", student: null });
   const [filter, setFilter] = useState("todos");
   const [modal, setModal] = useState(null);
@@ -46,14 +49,32 @@ function App({ teacher, onLogout }) {
   }, [teacherId]);
 
   const subject = SUBJECTS.find((s) => s.id === activeSubject);
-  const scopedStudents = students.filter((s) => s.subjectId === activeSubject);
+  const competence = typeof competenceById === "function" ? competenceById(activeCompetence) : null;
+  const scopedStudents = typeof studentsOfCompetence === "function"
+    ? students.filter((s) => {
+        if (s.competenceId) return s.competenceId === activeCompetence;
+        const first = typeof defaultCompetenceId === "function" ? defaultCompetenceId(activeSubject) : null;
+        return s.subjectId === activeSubject && activeCompetence === first;
+      })
+    : students.filter((s) => s.subjectId === activeSubject);
   const studentIds = new Set(scopedStudents.map((s) => s.id));
   const scopedSuggestions = suggestions.filter((s) => studentIds.has(s.studentId));
   const scopedPending = pending.filter((p) => studentIds.has(p.studentId));
 
   const openStudent = (s) => setRoute({ view: "perfil", student: s });
   const navigate = (r) => { setRoute({ ...r, student: null }); };
-  const changeSubject = (sid) => { setActiveSubject(sid); setFilter("todos"); setRoute({ view: "alumnos", student: null }); };
+  const changeSubject = (sid) => {
+    setActiveSubject(sid);
+    const nextComp = typeof defaultCompetenceId === "function" ? defaultCompetenceId(sid) : null;
+    setActiveCompetence(nextComp);
+    setFilter("todos");
+    setRoute({ view: "alumnos", student: null });
+  };
+  const changeCompetence = (cid) => {
+    setActiveCompetence(cid);
+    setFilter("todos");
+    setRoute({ view: "alumnos", student: null });
+  };
   const openUpload = (s) => setModal({ type: "upload", student: s || null });
   const openGenerate = (s, analysisHint) => setModal({
     type: "generate",
@@ -80,6 +101,7 @@ function App({ teacher, onLogout }) {
     pullFromWindow();
     setModal(null);
     if (saved?.subjectId) setActiveSubject(saved.subjectId);
+    if (saved?.competenceId) setActiveCompetence(saved.competenceId);
     if (route.view === "perfil" && saved) setRoute({ view: "perfil", student: saved });
   };
 
@@ -140,6 +162,7 @@ function App({ teacher, onLogout }) {
     content = (
       <SubjectHome
         subject={subject}
+        competence={competence}
         students={scopedStudents}
         suggestions={scopedSuggestions}
         pending={scopedPending}
@@ -167,8 +190,10 @@ function App({ teacher, onLogout }) {
       <Sidebar
         route={route}
         activeSubject={activeSubject}
+        activeCompetence={activeCompetence}
         onNavigate={navigate}
         onSubject={changeSubject}
+        onCompetence={changeCompetence}
         onRuta={openRutaPicker}
         onLogout={onLogout}
       />
@@ -206,6 +231,7 @@ function App({ teacher, onLogout }) {
         <StudentFormModal
           student={modal.student}
           defaultSubjectId={activeSubject}
+          defaultCompetenceId={activeCompetence}
           teacherId={teacherId}
           onSaved={onStudentSaved}
           onDeleted={onStudentDeleted}

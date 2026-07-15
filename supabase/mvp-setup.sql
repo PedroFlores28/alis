@@ -8,6 +8,9 @@ ALTER TABLE students
 ALTER TABLE students
   ADD COLUMN IF NOT EXISTS learning_path JSONB DEFAULT NULL;
 
+ALTER TABLE students
+  ADD COLUMN IF NOT EXISTS competence_id TEXT DEFAULT NULL;
+
 CREATE INDEX IF NOT EXISTS students_teacher_id_idx ON students (teacher_id);
 
 ALTER TABLE students ENABLE ROW LEVEL SECURITY;

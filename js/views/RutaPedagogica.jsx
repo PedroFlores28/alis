@@ -50,8 +50,9 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
               <StatusChip status={student.status} />
             </div>
             <p className="profile-hero-meta">
-              <span><Icon name="cap" size={15} /> {student.grade}</span>
+              <span><Icon name="target" size={15} /> {student.competenceLabel || (typeof studentCompetenceLabel === "function" ? studentCompetenceLabel(student) : student.subject)}</span>
               <span><Icon name="book" size={15} /> {student.subject}</span>
+              {student.grade ? <span><Icon name="cap" size={15} /> {student.grade}</span> : null}
             </p>
           </div>
         </section>
@@ -72,7 +73,7 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
             <p className="ruta-node-text">
               {cneb
                 ? `${cneb.capacity}. ${cneb.performance}`
-                : `No hay referencia CNEB para ${student.grade} / ${student.subject}.`}
+                : `No hay referencia CNEB para esta competencia / ${student.subject}.`}
             </p>
           </div>
         </section>

@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>ALIS — Propuesta por competencias MINEDU</title>
+  <style>
+    @page { size: A4; margin: 22mm 20mm; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      color: #1a1a1a;
+      line-height: 1.55;
+      font-size: 11.5pt;
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    h1 { font-size: 22pt; margin: 0 0 6px; letter-spacing: -0.02em; }
+    h2 { font-size: 14pt; margin: 28px 0 10px; color: #111; border-bottom: 2px solid #FFCC06; padding-bottom: 4px; }
+    h3 { font-size: 12pt; margin: 18px 0 8px; }
+    p { margin: 0 0 10px; }
+    .sub { color: #555; font-size: 11pt; margin-bottom: 22px; }
+    .badge { display: inline-block; background: #FFCC06; color: #111; font-weight: 700; font-size: 9pt; padding: 3px 10px; border-radius: 999px; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0 18px; font-size: 10.5pt; }
+    th, td { border: 1px solid #ddd; padding: 8px 10px; text-align: left; vertical-align: top; }
+    th { background: #f5f5f5; font-weight: 700; }
+    ul { margin: 8px 0 12px 20px; padding: 0; }
+    li { margin-bottom: 6px; }
+    .box { background: #fafafa; border: 1px solid #e8e8e8; border-left: 4px solid #FFCC06; padding: 14px 16px; margin: 14px 0; border-radius: 6px; }
+    .flow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 12px 0; font-size: 10.5pt; }
+    .flow span { background: #f0f0f0; padding: 6px 10px; border-radius: 8px; }
+    .flow .arrow { background: none; padding: 0; color: #888; }
+    .footer { margin-top: 36px; padding-top: 12px; border-top: 1px solid #ddd; font-size: 9.5pt; color: #666; }
+    .comp { font-size: 10pt; }
+    .comp strong { color: #111; }
+    @media print {
+      body { padding: 0; }
+      h2 { page-break-after: avoid; }
+      .box { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+  <span class="badge">Documento para supervisión</span>
+  <h1>ALIS — Cambio a competencias MINEDU</h1>
+  <p class="sub">Propuesta sencilla de cómo funcionaría el panel del docente al organizar el seguimiento por <strong>competencias del Currículo Nacional (CNEB)</strong>, en lugar de por grado escolar (1°, 2°, 3° de secundaria).</p>
+
+  <h2>1. ¿Qué es ALIS hoy?</h2>
+  <p>ALIS es un panel para docentes/tutores donde pueden:</p>
+  <ul>
+    <li>Registrar alumnos y subir evidencias (fotos o PDF de tareas/exámenes).</li>
+    <li>Recibir análisis con IA sobre el desempeño del alumno.</li>
+    <li>Ver sugerencias, historial de resultados y una ruta pedagógica.</li>
+    <li>Generar material de refuerzo alineado al currículo.</li>
+  </ul>
+  <p>Hoy el sistema organiza todo principalmente por <strong>materia + grado</strong> (por ejemplo: Matemática · 2° Secundaria).</p>
+
+  <h2>2. ¿Qué propone el cambio?</h2>
+  <p>Pasar a organizar el seguimiento por <strong>competencias oficiales del MINEDU (Perú)</strong>, tal como aparecen en el CNEB de gob.pe.</p>
+  <div class="box">
+    <strong>Idea central:</strong> el docente ya no navega pensando “este alumno está en 2° de secundaria”, sino <strong>“este alumno está trabajando la Competencia 23 — Resuelve problemas de cantidad”</strong>.
+  </div>
+  <p>El grado del alumno puede seguir guardándose como dato informativo, pero <strong>deja de ser el eje principal</strong> de la plataforma.</p>
+
+  <h2>3. Comparación: antes vs. después</h2>
+  <table>
+    <tr>
+      <th>Aspecto</th>
+      <th>Hoy (por grado)</th>
+      <th>Propuesto (por competencia)</th>
+    </tr>
+    <tr>
+      <td>Organización</td>
+      <td>Materia + grado (1°, 2°, 3° Sec.)</td>
+      <td>Área curricular + competencia MINEDU</td>
+    </tr>
+    <tr>
+      <td>Objetivo de la ruta</td>
+      <td>Referencia genérica por grado/materia</td>
+      <td>Competencia y capacidades específicas del CNEB</td>
+    </tr>
+    <tr>
+      <td>Análisis de evidencia</td>
+      <td>“Cómo le fue en la tarea”</td>
+      <td>“Qué brecha tiene respecto a la competencia”</td>
+    </tr>
+    <tr>
+      <td>Refuerzo sugerido</td>
+      <td>A veces repite el mismo tipo de ejercicio</td>
+      <td>Primero bases faltantes, luego la meta (línea de sesiones)</td>
+    </tr>
+    <tr>
+      <td>Vista del docente</td>
+      <td>Alumnos por materia y grado</td>
+      <td>Alumnos por competencia que están desarrollando</td>
+    </tr>
+  </table>
+
+  <h2>4. Competencias MINEDU que usaríamos (ejemplos)</h2>
+  <p>Las competencias vienen del CNEB. Para ALIS, en un primer paso bastaría con las áreas que ya maneja la app:</p>
+
+  <h3>Matemática</h3>
+  <ul class="comp">
+    <li><strong>Competencia 23:</strong> Resuelve problemas de cantidad.</li>
+    <li><strong>Competencia 24:</strong> Resuelve problemas de regularidad, equivalencia y cambio.</li>
+    <li><strong>Competencia 25:</strong> Resuelve problemas de gestión de datos e incertidumbre.</li>
+    <li><strong>Competencia 26:</strong> Resuelve problemas de forma, movimiento y localización.</li>
+  </ul>
+
+  <h3>Comunicación (lengua materna)</h3>
+  <ul class="comp">
+    <li><strong>Competencia 7:</strong> Se comunica oralmente en su lengua materna.</li>
+    <li><strong>Competencia 8:</strong> Lee diversos tipos de textos en su lengua materna.</li>
+    <li><strong>Competencia 9:</strong> Escribe diversos tipos de textos en su lengua materna.</li>
+  </ul>
+
+  <h3>Inglés</h3>
+  <ul class="comp">
+    <li><strong>Competencia 13:</strong> Se comunica oralmente en inglés como lengua extranjera.</li>
+    <li><strong>Competencia 14:</strong> Lee diversos tipos de textos en inglés.</li>
+    <li><strong>Competencia 15:</strong> Escribe diversos tipos de textos en inglés.</li>
+  </ul>
+
+  <p>Más adelante se pueden agregar otras competencias del CNEB (Ciencias, Sociales, etc.).</p>
+
+  <h2>5. ¿Cómo funcionaría en la práctica?</h2>
+
+  <h3>Paso 1 — El docente elige el área y la competencia</h3>
+  <p>En lugar de “Matemática · 2° Secundaria”, el docente entra a, por ejemplo:</p>
+  <div class="flow">
+    <span>Matemática</span><span class="arrow">→</span>
+    <span>Competencia 23: Cantidad</span>
+  </div>
+  <p>Ve sus alumnos que están trabajando esa competencia.</p>
+
+  <h3>Paso 2 — Sube una evidencia</h3>
+  <p>El docente sube la tarea o examen del alumno. La IA analiza:</p>
+  <ul>
+    <li>Qué competencia/capacidad se evalúa.</li>
+    <li>Qué aciertos y errores hay.</li>
+    <li>Si el alumno está <strong>atrás en bases previas</strong> (ej.: no domina suma, pero la tarea era multiplicación).</li>
+  </ul>
+
+  <h3>Paso 3 — Ruta pedagógica en línea de tiempo</h3>
+  <p>ALIS ya no sugiere “otro ejercicio igual”. Propone sesiones ordenadas de lo más fácil a la meta:</p>
+  <div class="box">
+    <strong>Ejemplo (Matemática):</strong><br>
+    1. Diagnóstico: la tarea pedía multiplicación.<br>
+    2. Sesión puente: sumar con precisión.<br>
+    3. Sesión puente: restar / descomponer.<br>
+    4. Sesión puente: multiplicación simple.<br>
+    5. Meta: multiplicación del nivel de la tarea original.
+  </div>
+  <p>Cada sesión puede generar práctica específica con un clic.</p>
+
+  <h3>Paso 4 — Seguimiento y ajuste</h3>
+  <ul>
+    <li>Historial editable de resultados por alumno.</li>
+    <li>Progreso hacia la competencia (no solo “% del grado”).</li>
+    <li>Sugerencias automáticas cuando hace falta refuerzo.</li>
+  </ul>
+
+  <h2>6. ¿Qué cambiaría en la interfaz?</h2>
+  <table>
+    <tr><th>Pantalla</th><th>Cambio visible</th></tr>
+    <tr><td>Selector principal</td><td>De “Materia + grado” a “Área + competencia MINEDU”</td></tr>
+    <tr><td>Ficha del alumno</td><td>Muestra competencia activa y avance hacia ella</td></tr>
+    <tr><td>Ruta pedagógica</td><td>Línea de tiempo de sesiones (puentes → meta)</td></tr>
+    <tr><td>Análisis IA</td><td>Detecta brechas previas y ordena sesiones</td></tr>
+    <tr><td>Grado escolar</td><td>Queda como dato opcional, no como filtro principal</td></tr>
+  </table>
+
+  <h2>7. Beneficios para el docente y la institución</h2>
+  <ul>
+    <li><strong>Alineación oficial:</strong> todo queda ligado al CNEB / MINEDU.</li>
+    <li><strong>Más pedagógico:</strong> se trabaja por lo que el alumno necesita aprender, no solo por su grado.</li>
+    <li><strong>Refuerzo inteligente:</strong> no se repite el error de mandar más ejercicios del mismo tema sin cerrar huecos.</li>
+    <li><strong>Mejor seguimiento:</strong> el supervisor ve avance por competencia, más claro para tutoría y reportes.</li>
+  </ul>
+
+  <h2>8. Implementación sugerida (por fases)</h2>
+  <table>
+    <tr><th>Fase</th><th>Qué se hace</th></tr>
+    <tr><td>Fase 1 (MVP)</td><td>Cambiar navegación a competencias 23–26, 7–9 y 13–15. Grado solo informativo.</td></tr>
+    <tr><td>Fase 2</td><td>Agregar capacidades y desempeños por competencia.</td></tr>
+    <tr><td>Fase 3</td><td>Reportes por competencia para coordinación académica.</td></tr>
+  </table>
+
+  <h2>9. Conclusión</h2>
+  <p>El cambio no es “quitar el currículo peruano”, sino <strong>usarlo como debe ser</strong>: por competencias. ALIS pasa de ser un panel por grado/materia a ser un acompañamiento pedagógico por competencia MINEDU, con evidencias, ruta de sesiones y material de refuerzo alineado al CNEB.</p>
+
+  <div class="footer">
+    ALIS · Propuesta interna · Currículo Nacional de Educación Básica (CNEB) — MINEDU Perú<br>
+    Documento generado para revisión de supervisión.
+  </div>
+
+</body>
+</html>

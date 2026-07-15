@@ -371,8 +371,6 @@ function GenerateModal({ preset, students, analysis, onClose }) {
   );
 }
 
-const GRADES = ["1° Secundaria", "2° Secundaria", "3° Secundaria"];
-
 function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDeleted, onClose }) {
   const [label, setLabel] = useState(entry?.label || "");
   const [score, setScore] = useState(entry?.score == null ? "" : String(entry.score));
@@ -448,21 +446,34 @@ function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDele
   );
 }
 
-function StudentFormModal({ student, defaultSubjectId, teacherId, onSaved, onDeleted, onClose }) {
+function StudentFormModal({ student, defaultSubjectId, defaultCompetenceId: defaultCompProp, teacherId, onSaved, onDeleted, onClose }) {
   const editing = !!(student && student.id);
+  const initialSubject = student?.subjectId || defaultSubjectId || "mate";
+  const initialComp = student?.competenceId
+    || defaultCompProp
+    || (typeof defaultCompetenceId === "function" ? defaultCompetenceId(initialSubject) : "c23");
   const [name, setName] = useState(student?.name || "");
-  const [grade, setGrade] = useState(student?.grade || "2° Secundaria");
-  const [subjectId, setSubjectId] = useState(student?.subjectId || defaultSubjectId || "mate");
+  const [grade, setGrade] = useState(student?.grade || "");
+  const [subjectId, setSubjectId] = useState(initialSubject);
+  const [competenceId, setCompetenceId] = useState(initialComp);
   const [focus, setFocus] = useState(student?.focus || "");
   const [note, setNote] = useState(student?.note || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const comps = typeof competenciesOf === "function" ? competenciesOf(subjectId) : [];
+
+  const changeSubject = (sid) => {
+    setSubjectId(sid);
+    const next = typeof defaultCompetenceId === "function" ? defaultCompetenceId(sid) : null;
+    setCompetenceId(next);
+  };
+
   const save = async () => {
     setError("");
     setLoading(true);
     try {
-      const payload = { name, grade, subjectId, focus, note };
+      const payload = { name, grade: grade || null, subjectId, competenceId, focus, note };
       const saved = editing
         ? await updateStudent(student.id, payload, teacherId)
         : await createStudent(payload, teacherId);
@@ -491,26 +502,50 @@ function StudentFormModal({ student, defaultSubjectId, teacherId, onSaved, onDel
     <Modal
       icon="students"
       title={editing ? "Editar alumno" : "Agregar alumno"}
-      sub="Los alumnos quedan vinculados a tu cuenta de docente."
+      sub="El alumno se organiza por competencia MINEDU (CNEB)."
       onClose={onClose}
     >
       <div className="modal-body">
         <label className="field-label">Nombre completo</label>
         <input className="form-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Ej. Ana Flores" disabled={loading} />
 
-        <label className="field-label">Grado</label>
+        <label className="field-label">Área</label>
         <div className="seg seg--full">
-          {GRADES.map((g) => (
-            <button key={g} type="button" className={"seg-btn" + (grade === g ? " is-on" : "")} onClick={() => setGrade(g)} disabled={loading}>{g}</button>
+          {SUBJECTS.map((s) => (
+            <button key={s.id} type="button" className={"seg-btn" + (subjectId === s.id ? " is-on" : "")} onClick={() => changeSubject(s.id)} disabled={loading}>
+              <Icon name={s.icon} size={15} /> {s.short || s.name}
+            </button>
           ))}
         </div>
 
-        <label className="field-label">Materia</label>
-        <div className="seg seg--full">
-          {SUBJECTS.map((s) => (
-            <button key={s.id} type="button" className={"seg-btn" + (subjectId === s.id ? " is-on" : "")} onClick={() => setSubjectId(s.id)} disabled={loading}>
-              <Icon name={s.icon} size={15} /> {s.short || s.name}
+        <label className="field-label">Competencia MINEDU</label>
+        <div className="comp-pick">
+          {comps.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              className={"comp-pick-btn" + (competenceId === c.id ? " is-on" : "")}
+              onClick={() => setCompetenceId(c.id)}
+              disabled={loading}
+            >
+              <span className="comp-pick-code">C{c.code}</span>
+              <span className="comp-pick-txt">
+                <span className="comp-pick-name">{c.short}</span>
+                <span className="comp-pick-meta">{c.competence}</span>
+              </span>
             </button>
+          ))}
+        </div>
+
+        <label className="field-label">Grado (opcional)</label>
+        <div className="seg seg--full">
+          {[
+            { id: "", label: "Sin grado" },
+            { id: "1° Secundaria", label: "1° Sec." },
+            { id: "2° Secundaria", label: "2° Sec." },
+            { id: "3° Secundaria", label: "3° Sec." },
+          ].map((g) => (
+            <button key={g.id || "none"} type="button" className={"seg-btn" + (grade === g.id ? " is-on" : "")} onClick={() => setGrade(g.id)} disabled={loading}>{g.label}</button>
           ))}
         </div>
 
@@ -529,7 +564,7 @@ function StudentFormModal({ student, defaultSubjectId, teacherId, onSaved, onDel
           </button>
         )}
         <button className="btn btn--ghost" onClick={onClose} disabled={loading}>Cancelar</button>
-        <button className="btn btn--primary" onClick={save} disabled={loading || !name.trim()}>
+        <button className="btn btn--primary" onClick={save} disabled={loading || !name.trim() || !competenceId}>
           {loading ? "Guardando…" : editing ? "Guardar cambios" : "Agregar alumno"}
         </button>
       </div>

@@ -68,7 +68,7 @@ function StudentCard({ student, variant, onOpen, onUpload }) {
         <Avatar student={student} size={38} />
         <div className="scard-min-id">
           <span className="scard-name">{student.name}</span>
-          <span className="scard-meta">{student.grade} · {student.subject}</span>
+          <span className="scard-meta">{student.competenceLabel || studentCompetenceLabel?.(student) || student.subject}{(student.grade ? ` · ${student.grade}` : "")}</span>
         </div>
         <StatusChip status={student.status} size="sm" />
         <div className="scard-min-bar">
@@ -88,7 +88,7 @@ function StudentCard({ student, variant, onOpen, onUpload }) {
             <Avatar student={student} size={44} />
             <div className="scard-id">
               <span className="scard-name">{student.name}</span>
-              <span className="scard-meta">{student.grade} · {student.subject}</span>
+              <span className="scard-meta">{student.competenceLabel || studentCompetenceLabel?.(student) || student.subject}{(student.grade ? ` · ${student.grade}` : "")}</span>
             </div>
           </div>
           <div className="scard-ring-foot">
@@ -113,7 +113,7 @@ function StudentCard({ student, variant, onOpen, onUpload }) {
         <Avatar student={student} size={44} />
         <div className="scard-id">
           <span className="scard-name">{student.name}</span>
-          <span className="scard-meta">{student.grade} · {student.subject}</span>
+          <span className="scard-meta">{student.competenceLabel || studentCompetenceLabel?.(student) || student.subject}{(student.grade ? ` · ${student.grade}` : "")}</span>
         </div>
         <StatusChip status={student.status} />
       </div>

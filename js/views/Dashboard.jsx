@@ -1,24 +1,30 @@
-// Dashboard.jsx — SubjectHome: the "Alumnos" view, scoped to the active subject
-function Topbar({ subject, students }) {
+// Dashboard.jsx — SubjectHome: alumnos por área + competencia MINEDU
+function Topbar({ subject, competence, students }) {
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
   const attn = students.filter((s) => s.status === "riesgo" || s.status === "atencion").length;
   const first = TEACHER.name.split(" ")[0];
+  const title = competence
+    ? `C${competence.code} · ${competence.short}`
+    : subject.name;
+  const subLine = competence
+    ? `${subject.name} · ${competence.competence}`
+    : subject.name;
   return (
     <header className="topbar">
       <div className="topbar-l">
         <h1 className="topbar-title">
           <span className="topbar-subj"><Icon name={subject.icon} size={20} /></span>
-          {subject.name}
+          {title}
         </h1>
         <p className="topbar-sub">
-          {greet}, {first} · {attn > 0 ? `${attn} ${attn === 1 ? "alumno necesita" : "alumnos necesitan"} atención hoy` : "todo en orden hoy"}
+          {subLine} · {greet}, {first} · {attn > 0 ? `${attn} ${attn === 1 ? "alumno necesita" : "alumnos necesitan"} atención hoy` : "todo en orden hoy"}
         </p>
       </div>
       <div className="topbar-r">
         <div className="search">
           <Icon name="search" size={18} />
-          <input placeholder={`Buscar en ${subject.name}…`} />
+          <input placeholder={`Buscar en ${competence ? competence.short : subject.name}…`} />
           <kbd>⌘K</kbd>
         </div>
         <button className="icon-pill" title="Notificaciones"><Icon name="bell" size={19} /><span className="icon-pill-dot" /></button>
@@ -88,7 +94,7 @@ function SuggestionCard({ s, onOpen, onAct, onDismiss }) {
   );
 }
 
-function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onAddStudent, onDismissSuggestion }) {
+function SubjectHome({ subject, competence, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onAddStudent, onDismissSuggestion }) {
   const shown = students.filter((s) => {
     if (t.filter === "todos") return true;
     if (t.filter === "riesgo") return s.status === "riesgo" || s.status === "atencion";
@@ -96,7 +102,7 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
   });
   return (
     <div className="view">
-      <Topbar subject={subject} students={students} />
+      <Topbar subject={subject} competence={competence} students={students} />
       <div className="view-body">
         <KpiStrip students={students} />
         <div className="grid-2">
@@ -119,7 +125,7 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
                 <StudentCard key={s.id} student={s} variant={t.cardStyle} onOpen={() => onOpenStudent(s)} onUpload={() => onUpload(s)} />
               )) : (
                 <div className="scards-empty scards-empty--cta">
-                  <p>{students.length ? "No hay alumnos en este filtro." : "Aún no tienes alumnos en esta materia."}</p>
+                  <p>{students.length ? "No hay alumnos en este filtro." : "Aún no tienes alumnos en esta competencia."}</p>
                   {!students.length && (
                     <button className="btn btn--primary btn--sm" onClick={onAddStudent}>
                       <Icon name="plus" size={15} /> Agregar alumno

@@ -63,5 +63,14 @@ const PENDING = [];
 
 const byId = (id) => (window.STUDENTS || STUDENTS).find((s) => s.id === id);
 const studentsOf = (sid) => (window.STUDENTS || STUDENTS).filter((s) => s.subjectId === sid);
+const studentsOfCompetence = (competenceId, subjectId) =>
+  (window.STUDENTS || STUDENTS).filter((s) => {
+    if (competenceId && s.competenceId) return s.competenceId === competenceId;
+    if (competenceId && subjectId) return s.subjectId === subjectId && !s.competenceId;
+    return s.subjectId === subjectId;
+  });
 
-Object.assign(window, { Icon, TEACHER, SUBJECTS, STUDENTS, STATUS, SUGGESTIONS, PENDING, byId, studentsOf });
+Object.assign(window, {
+  Icon, TEACHER, SUBJECTS, STUDENTS, STATUS, SUGGESTIONS, PENDING,
+  byId, studentsOf, studentsOfCompetence,
+});

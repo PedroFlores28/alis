@@ -61,6 +61,7 @@ input{font-family:inherit}
 .subj-chev.is-open{transform:rotate(180deg);color:var(--brand)}
 .subj-backdrop{position:fixed;inset:0;z-index:40}
 .subj-menu{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:50;background:#141414;border:1px solid var(--sidebar-3);border-radius:14px;padding:6px;box-shadow:0 18px 40px -12px rgba(0,0,0,.7);animation:subjpop .16s ease}
+.subj-menu--wide{min-width:280px}
 @keyframes subjpop{from{opacity:0;transform:translateY(-6px)}}
 .subj-opt{display:flex;align-items:center;gap:11px;width:100%;padding:9px 10px;border-radius:10px;text-align:left;color:var(--sidebar-muted);transition:background .13s}
 .subj-opt:hover{background:var(--sidebar-2);color:#fff}
@@ -134,6 +135,14 @@ input{font-family:inherit}
 .seg{display:inline-flex;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
 .seg--full{display:flex;width:100%}
 .seg--full .seg-btn{flex:1;justify-content:center}
+.comp-pick{display:flex;flex-direction:column;gap:8px;margin:4px 0 8px}
+.comp-pick-btn{display:flex;align-items:flex-start;gap:10px;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);transition:border-color .14s,background .14s}
+.comp-pick-btn:hover{background:var(--bg)}
+.comp-pick-btn.is-on{border-color:var(--brand);background:linear-gradient(180deg,oklch(0.99 0.02 95),var(--surface))}
+.comp-pick-code{font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--ink);background:var(--brand);padding:3px 7px;border-radius:8px;flex-shrink:0}
+.comp-pick-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.comp-pick-name{font-size:13.5px;font-weight:700}
+.comp-pick-meta{font-size:12px;color:var(--muted);line-height:1.35}
 .seg-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--muted);padding:6px 12px;border-radius:7px;transition:background .14s,color .14s}
 .seg-btn:hover{color:var(--ink)}
 .seg-btn.is-on{background:var(--surface);color:var(--ink);box-shadow:var(--sh-sm)}

@@ -37,8 +37,9 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
               <StatusChip status={student.status} />
             </div>
             <p className="profile-hero-meta">
-              <span><Icon name="cap" size={15} /> {student.grade}</span>
+              <span><Icon name="target" size={15} /> {student.competenceLabel || (typeof studentCompetenceLabel === "function" ? studentCompetenceLabel(student) : student.subject)}</span>
               <span><Icon name="book" size={15} /> {student.subject}</span>
+              {student.grade ? <span><Icon name="cap" size={15} /> {student.grade}</span> : null}
               <span><Icon name="clock" size={15} /> {student.sessions} sesiones</span>
               <span><Icon name="calendar" size={15} /> Próxima: {student.nextSession}</span>
             </p>
@@ -66,7 +67,7 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
           <section className="panel">
             <div className="panel-head">
               <h2 className="panel-title">Dominio por tema</h2>
-              <span className="panel-sub-inline">{student.subject} · {student.grade}</span>
+              <span className="panel-sub-inline">{student.subject} · {student.competenceLabel || (typeof studentCompetenceLabel === "function" ? studentCompetenceLabel(student) : "")}</span>
             </div>
             <div className="topics">
               {student.topics.map((tp) => {

@@ -2,13 +2,22 @@
 
 function mapStudent(row, subjects) {
   const subj = (subjects || window.SUBJECTS || []).find((s) => s.id === row.subject_id);
+  let competenceId = row.competence_id || row.competenceId || null;
+  if (!competenceId && row.subject_id && typeof defaultCompetenceId === "function") {
+    competenceId = defaultCompetenceId(row.subject_id);
+  }
+  const comp = typeof competenceById === "function" ? competenceById(competenceId) : null;
   return {
     id: row.id,
     subjectId: row.subject_id,
+    competenceId,
     name: row.name,
     initials: row.initials,
-    grade: row.grade,
+    grade: row.grade || "",
     subject: subj ? subj.name : row.subject_id,
+    competenceLabel: comp
+      ? ("C" + comp.code + " · " + comp.short)
+      : "",
     progress: row.progress ?? 0,
     status: row.status || "normal",
     trend: row.trend ?? 0,
@@ -50,6 +59,16 @@ function syncStudentHelpers(list) {
   window.STUDENTS = list;
   window.byId = (id) => window.STUDENTS.find((s) => s.id === id);
   window.studentsOf = (sid) => window.STUDENTS.filter((s) => s.subjectId === sid);
+  window.studentsOfCompetence = (competenceId, subjectId) =>
+    window.STUDENTS.filter((s) => {
+      if (competenceId && s.competenceId) return s.competenceId === competenceId;
+      // Alumnos antiguos sin competenceId: contarlos en la 1ª competencia del área
+      if (competenceId && subjectId && !s.competenceId) {
+        const first = typeof defaultCompetenceId === "function" ? defaultCompetenceId(subjectId) : null;
+        return s.subjectId === subjectId && competenceId === first;
+      }
+      return s.subjectId === subjectId;
+    });
 }
 
 function localStudentsKey(teacherId) {
@@ -175,17 +194,19 @@ async function loadAlisDataForTeacher(teacherId) {
 async function createStudent(payload, teacherId) {
   const name = String(payload.name || "").trim();
   if (!name) throw new Error("El nombre es obligatorio.");
-  if (!payload.subjectId) throw new Error("Elige una materia.");
-  if (!payload.grade) throw new Error("Elige un grado.");
+  if (!payload.subjectId) throw new Error("Elige un área.");
+  const competenceId = payload.competenceId || (typeof defaultCompetenceId === "function" ? defaultCompetenceId(payload.subjectId) : null);
+  if (!competenceId) throw new Error("Elige una competencia MINEDU.");
   if (!teacherId) throw new Error("Sesión de docente no válida.");
 
   const subj = (window.SUBJECTS || []).find((s) => s.id === payload.subjectId);
   const row = {
     id: slugId(name),
     subject_id: payload.subjectId,
+    competence_id: competenceId,
     name,
     initials: initialsFromName(name),
-    grade: payload.grade,
+    grade: String(payload.grade || "").trim() || null,
     progress: 0,
     status: "normal",
     trend: 0,
@@ -210,11 +231,23 @@ async function createStudent(payload, teacherId) {
       saveLocalStudents(teacherId, list);
       return student;
     }
+    // Si falla por columna competence_id, reintentar sin ella y guardar local con competencia
+    if (error && /competence_id/i.test(error.message || "")) {
+      const { competence_id, ...legacy } = row;
+      const retry = await client.from("students").insert(legacy).select("*").single();
+      if (!retry.error && retry.data) {
+        const student = mapStudent({ ...retry.data, competence_id: competenceId }, window.SUBJECTS);
+        const list = [...(window.STUDENTS || []), student];
+        syncStudentHelpers(list);
+        saveLocalStudents(teacherId, list);
+        return student;
+      }
+    }
     const msg = error?.message || "No se pudo guardar en Supabase.";
     console.warn("[ALIS] createStudent Supabase:", msg);
     throw new Error(
       "No se pudo guardar el alumno en la nube. " +
-      "Ejecuta supabase/mvp-setup.sql en el SQL Editor de Supabase. Detalle: " + msg
+      "Ejecuta supabase/mvp-setup.sql (o competence-setup.sql) en Supabase. Detalle: " + msg
     );
   }
 
@@ -234,7 +267,8 @@ async function updateStudent(studentId, payload, teacherId) {
     name,
     initials: initialsFromName(name),
     subject_id: payload.subjectId,
-    grade: payload.grade,
+    competence_id: payload.competenceId || null,
+    grade: String(payload.grade || "").trim() || null,
     focus: String(payload.focus || "").trim() || "Por definir",
     note: String(payload.note || "").trim(),
   };
@@ -255,6 +289,23 @@ async function updateStudent(studentId, payload, teacherId) {
       saveLocalStudents(teacherId, list);
       return student;
     }
+    if (error && /competence_id/i.test(error.message || "")) {
+      const { competence_id, ...legacyPatch } = patch;
+      const retry = await client
+        .from("students")
+        .update(legacyPatch)
+        .eq("id", studentId)
+        .eq("teacher_id", teacherId)
+        .select("*")
+        .single();
+      if (!retry.error && retry.data) {
+        const student = mapStudent({ ...retry.data, competence_id: payload.competenceId }, window.SUBJECTS);
+        const list = (window.STUDENTS || []).map((s) => (s.id === studentId ? student : s));
+        syncStudentHelpers(list);
+        saveLocalStudents(teacherId, list);
+        return student;
+      }
+    }
     const msg = error?.message || "No se pudo actualizar en Supabase.";
     console.warn("[ALIS] updateStudent Supabase:", msg);
     throw new Error("No se pudo actualizar el alumno. Detalle: " + msg);
@@ -263,15 +314,30 @@ async function updateStudent(studentId, payload, teacherId) {
   const list = (window.STUDENTS || []).map((s) => {
     if (s.id !== studentId) return s;
     const subj = (window.SUBJECTS || []).find((x) => x.id === payload.subjectId);
-    return {
+    const mapped = mapStudent({
       ...s,
+      id: s.id,
+      subject_id: payload.subjectId,
+      competence_id: payload.competenceId,
       name,
       initials: initialsFromName(name),
-      subjectId: payload.subjectId,
-      subject: subj ? subj.name : payload.subjectId,
-      grade: payload.grade,
+      grade: patch.grade,
       focus: patch.focus,
       note: patch.note,
+      progress: s.progress,
+      status: s.status,
+      trend: s.trend,
+      avatar_hue: s.avatarHue,
+      next_session: s.nextSession,
+      sessions: s.sessions,
+      topics: s.topics,
+      history: s.history,
+      learning_path: s.learningPath,
+      teacher_id: s.teacherId,
+    }, window.SUBJECTS);
+    return {
+      ...mapped,
+      subject: subj ? subj.name : payload.subjectId,
     };
   });
   syncStudentHelpers(list);
