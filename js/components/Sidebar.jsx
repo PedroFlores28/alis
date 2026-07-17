@@ -1,4 +1,4 @@
-// Sidebar.jsx — área curricular + competencia MINEDU + navegación
+// Sidebar.jsx — área curricular + navegación
 const { useState } = React;
 
 function AreaSelector({ activeSubject, onChange }) {
@@ -40,58 +40,10 @@ function AreaSelector({ activeSubject, onChange }) {
   );
 }
 
-function CompetenceSelector({ activeSubject, activeCompetence, onChange }) {
-  const [open, setOpen] = useState(false);
-  const list = typeof competenciesOf === "function" ? competenciesOf(activeSubject) : [];
-  const active = list.find((c) => c.id === activeCompetence) || list[0];
-  if (!active) return null;
-
-  const countFor = (cid) => {
-    if (typeof studentsOfCompetence === "function") {
-      return studentsOfCompetence(cid, activeSubject).length;
-    }
-    return (window.STUDENTS || []).filter((s) => s.competenceId === cid || (!s.competenceId && s.subjectId === activeSubject && cid === list[0]?.id)).length;
-  };
-
-  return (
-    <div className="subj">
-      <span className="sb-section-label">Competencia MINEDU</span>
-      <button className={"subj-trigger" + (open ? " is-open" : "")} onClick={() => setOpen(!open)}>
-        <span className="subj-icon"><Icon name="target" size={20} /></span>
-        <span className="subj-name">C{active.code} · {active.short}</span>
-        <span className={"subj-chev" + (open ? " is-open" : "")}><Icon name="chevronDown" size={17} /></span>
-      </button>
-      {open && (
-        <>
-          <div className="subj-backdrop" onClick={() => setOpen(false)} />
-          <div className="subj-menu subj-menu--wide">
-            {list.map((c) => (
-              <button
-                key={c.id}
-                className={"subj-opt" + (c.id === active.id ? " is-on" : "")}
-                onClick={() => { onChange(c.id); setOpen(false); }}
-              >
-                <span className="subj-opt-icon"><Icon name="target" size={18} /></span>
-                <span className="subj-opt-txt">
-                  <span className="subj-opt-name">C{c.code} · {c.short}</span>
-                  <span className="subj-opt-meta">{c.competence} · {countFor(c.id)} alumnos</span>
-                </span>
-                {c.id === active.id && <span className="subj-opt-check"><Icon name="check" size={15} /></span>}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
-function Sidebar({ route, activeSubject, activeCompetence, onNavigate, onSubject, onCompetence, onRuta, onLogout }) {
+function Sidebar({ route, activeSubject, onNavigate, onSubject, onRuta, onLogout }) {
   const inStudents = route.view === "alumnos" || route.view === "perfil";
   const inRuta = route.view === "ruta";
-  const count = typeof studentsOfCompetence === "function"
-    ? studentsOfCompetence(activeCompetence, activeSubject).length
-    : studentsOf(activeSubject).length;
+  const count = studentsOf(activeSubject).length;
 
   return (
     <aside className="sidebar">
@@ -100,11 +52,6 @@ function Sidebar({ route, activeSubject, activeCompetence, onNavigate, onSubject
       </button>
 
       <AreaSelector activeSubject={activeSubject} onChange={onSubject} />
-      <CompetenceSelector
-        activeSubject={activeSubject}
-        activeCompetence={activeCompetence}
-        onChange={onCompetence}
-      />
 
       <div className="sb-divider" />
 

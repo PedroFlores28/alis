@@ -49,14 +49,8 @@ function App({ teacher, onLogout }) {
   }, [teacherId]);
 
   const subject = SUBJECTS.find((s) => s.id === activeSubject);
-  const competence = typeof competenceById === "function" ? competenceById(activeCompetence) : null;
-  const scopedStudents = typeof studentsOfCompetence === "function"
-    ? students.filter((s) => {
-        if (s.competenceId) return s.competenceId === activeCompetence;
-        const first = typeof defaultCompetenceId === "function" ? defaultCompetenceId(activeSubject) : null;
-        return s.subjectId === activeSubject && activeCompetence === first;
-      })
-    : students.filter((s) => s.subjectId === activeSubject);
+  // Lista por área (el tab de competencia del menú ya no filtra la vista)
+  const scopedStudents = students.filter((s) => s.subjectId === activeSubject);
   const studentIds = new Set(scopedStudents.map((s) => s.id));
   const scopedSuggestions = suggestions.filter((s) => studentIds.has(s.studentId));
   const scopedPending = pending.filter((p) => studentIds.has(p.studentId));
@@ -67,11 +61,6 @@ function App({ teacher, onLogout }) {
     setActiveSubject(sid);
     const nextComp = typeof defaultCompetenceId === "function" ? defaultCompetenceId(sid) : null;
     setActiveCompetence(nextComp);
-    setFilter("todos");
-    setRoute({ view: "alumnos", student: null });
-  };
-  const changeCompetence = (cid) => {
-    setActiveCompetence(cid);
     setFilter("todos");
     setRoute({ view: "alumnos", student: null });
   };
@@ -162,7 +151,6 @@ function App({ teacher, onLogout }) {
     content = (
       <SubjectHome
         subject={subject}
-        competence={competence}
         students={scopedStudents}
         suggestions={scopedSuggestions}
         pending={scopedPending}
@@ -190,10 +178,8 @@ function App({ teacher, onLogout }) {
       <Sidebar
         route={route}
         activeSubject={activeSubject}
-        activeCompetence={activeCompetence}
         onNavigate={navigate}
         onSubject={changeSubject}
-        onCompetence={changeCompetence}
         onRuta={openRutaPicker}
         onLogout={onLogout}
       />
