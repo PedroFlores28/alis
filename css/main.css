@@ -267,7 +267,8 @@ input{font-family:inherit}
 
 /* ---------- Empty / placeholder views ---------- */
 .scards-empty,.sugg-empty{padding:22px;text-align:center;color:var(--muted);font-size:13.5px;display:flex;align-items:center;justify-content:center;gap:8px}
-.scards-empty--cta{flex-direction:column;gap:14px;padding:36px 22px}
+.scards-empty{grid-column:1/-1;width:100%;min-height:120px;padding:36px 22px}
+.scards-empty p{margin:0;width:100%;text-align:center}
 .form-input,.form-textarea{width:100%;border:1px solid var(--line);border-radius:11px;padding:11px 13px;font:inherit;font-size:14.5px;color:var(--ink);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s}
 .form-input:focus,.form-textarea:focus{border-color:var(--ink);box-shadow:0 0 0 3px oklch(0.92 0.004 95)}
 .form-textarea{resize:vertical;min-height:80px;line-height:1.45}

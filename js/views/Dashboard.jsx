@@ -124,13 +124,8 @@ function SubjectHome({ subject, competence, students, suggestions, pending, t, o
               {shown.length ? shown.map((s) => (
                 <StudentCard key={s.id} student={s} variant={t.cardStyle} onOpen={() => onOpenStudent(s)} onUpload={() => onUpload(s)} />
               )) : (
-                <div className="scards-empty scards-empty--cta">
+                <div className="scards-empty">
                   <p>{students.length ? "No hay alumnos en este filtro." : "Aún no tienes alumnos en esta competencia."}</p>
-                  {!students.length && (
-                    <button className="btn btn--primary btn--sm" onClick={onAddStudent}>
-                      <Icon name="plus" size={15} /> Agregar alumno
-                    </button>
-                  )}
                 </div>
               )}
             </div>
