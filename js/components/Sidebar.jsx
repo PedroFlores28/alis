@@ -40,7 +40,7 @@ function AreaSelector({ activeSubject, onChange }) {
   );
 }
 
-function Sidebar({ route, activeSubject, onNavigate, onSubject, onRuta, onLogout }) {
+function Sidebar({ route, activeSubject, onNavigate, onSubject, onRuta, planName, onOpenProfile }) {
   const inStudents = route.view === "alumnos" || route.view === "perfil";
   const inRuta = route.view === "ruta";
   const count = studentsOf(activeSubject).length;
@@ -75,14 +75,14 @@ function Sidebar({ route, activeSubject, onNavigate, onSubject, onRuta, onLogout
         <span className="sb-link-label">Configuración</span>
       </button>
 
-      <div className="sb-profile" role="button" tabIndex={0} onClick={onLogout} title="Cerrar sesión">
+      <button className="sb-profile" type="button" onClick={onOpenProfile} title="Abrir perfil y membresía">
         <div className="sb-avatar">{TEACHER.initials}</div>
         <div className="sb-profile-meta">
           <span className="sb-profile-name">{TEACHER.name}</span>
-          <span className="sb-profile-plan"><span className="sb-plan-dot" />{TEACHER.plan}</span>
+          <span className="sb-profile-plan"><span className="sb-plan-dot" />Plan {planName || "Aula"}</span>
         </div>
-        <span className="sb-profile-chev"><Icon name="chevronDown" size={16} /></span>
-      </div>
+        <span className="sb-profile-chev"><Icon name="chevron" size={16} /></span>
+      </button>
     </aside>
   );
 }

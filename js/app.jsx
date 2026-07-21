@@ -18,8 +18,17 @@ function App({ teacher, onLogout }) {
   const [suggestions, setSuggestions] = useState(() => [...(window.SUGGESTIONS || [])]);
   const [pending, setPending] = useState(() => [...(window.PENDING || [])]);
   const [dataReady, setDataReady] = useState(false);
+  const [activePlan, setActivePlan] = useState(
+    () => localStorage.getItem("alis_active_plan") || "aula"
+  );
+  const [profileConfigOpen, setProfileConfigOpen] = useState(false);
 
   const teacherId = teacher?.id || teacher?.email;
+
+  const changePlan = (planId) => {
+    localStorage.setItem("alis_active_plan", planId);
+    setActivePlan(planId);
+  };
 
   const pullFromWindow = () => {
     setStudents([...(window.STUDENTS || [])]);
@@ -140,12 +149,13 @@ function App({ teacher, onLogout }) {
     );
   } else if (route.view === "config") {
     content = (
-      <div className="view"><div className="empty">
-        <span className="empty-icon"><Icon name="settings" size={30} /></span>
-        <h2>Configuración</h2>
-        <p>Cuenta: {teacher.email || teacher.name}. Solo vista docente (MVP).</p>
-        <button className="btn btn--ghost" style={{ marginTop: 12 }} onClick={onLogout}>Cerrar sesión</button>
-      </div></div>
+      <SettingsView
+        teacher={teacher}
+        studentsCount={students.length}
+        activePlan={activePlan}
+        onPlanChange={changePlan}
+        onLogout={onLogout}
+      />
     );
   } else {
     content = (
@@ -181,9 +191,21 @@ function App({ teacher, onLogout }) {
         onNavigate={navigate}
         onSubject={changeSubject}
         onRuta={openRutaPicker}
-        onLogout={onLogout}
+        planName={typeof planById === "function" ? planById(activePlan).name : "Aula"}
+        onOpenProfile={() => setProfileConfigOpen(true)}
       />
       <main className="main">{content}</main>
+
+      {profileConfigOpen && (
+        <ProfileConfigModal
+          teacher={teacher}
+          studentsCount={students.length}
+          activePlan={activePlan}
+          onPlanChange={changePlan}
+          onLogout={onLogout}
+          onClose={() => setProfileConfigOpen(false)}
+        />
+      )}
 
       {modal && modal.type === "pick" && (
         <PickStudentModal
