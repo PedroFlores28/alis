@@ -411,7 +411,9 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
                             <strong>A medida</strong>
                           )}
                         </div>
-                        {plan.recommended ? <p className="profile-plan-picked">★ EL MÁS ELEGIDO</p> : null}
+                        <p className={"profile-plan-picked" + (plan.recommended ? "" : " is-placeholder")}>
+                          ★ EL MÁS ELEGIDO
+                        </p>
                         <ul>
                           <li>{plan.students ? `Hasta ${plan.students} alumnos` : "Alumnos ilimitados"}</li>
                           <li>{plan.analyses ? `${plan.analyses} análisis de evidencias` : "Análisis personalizados"}</li>
