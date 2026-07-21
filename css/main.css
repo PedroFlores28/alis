@@ -47,6 +47,8 @@ input{font-family:inherit}
 .sb-profile-plan{font-size:12px;color:var(--sidebar-muted);display:flex;align-items:center;gap:6px}
 .sb-plan-dot{width:6px;height:6px;border-radius:50%;background:var(--good)}
 .sb-profile-chev{color:var(--sidebar-muted)}
+.sb-logout{display:flex;align-items:center;gap:8px;width:100%;margin-top:5px;padding:7px 11px;border-radius:9px;color:var(--sidebar-muted);font-size:12px;font-weight:600;text-align:left;transition:background .14s,color .14s}
+.sb-logout:hover{background:rgba(255,255,255,.06);color:#fff}
 .sb-link-count{background:var(--sidebar-3);color:var(--sidebar-muted);font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:20px;line-height:1.5}
 .sb-link.is-active .sb-link-count{background:#2e2e2e;color:#eee}
 .sb-divider{height:1px;background:var(--sidebar-line);margin:14px 6px}
@@ -519,9 +521,6 @@ input{font-family:inherit}
 .profile-summary-row:last-child{border-bottom:0;padding-bottom:0}
 .profile-summary-row>span{color:var(--muted)}
 .profile-summary-row strong{text-align:right}
-.profile-signout-card{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--line);border-radius:13px;padding:13px 14px;background:var(--surface)}
-.profile-signout-card strong{font-size:12.5px}
-.profile-signout-card p{font-size:10.5px;color:var(--muted);margin-top:2px}
 .profile-membership-tab{gap:20px}
 .profile-plans-heading{text-align:center}
 .profile-plans-heading h3{font-size:20px;font-weight:800;letter-spacing:-.02em}

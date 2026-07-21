@@ -206,6 +206,7 @@ function App({ teacher, onLogout }) {
         onRuta={openRutaPicker}
         planName={typeof planById === "function" ? planById(activePlan).name : "Aula"}
         onOpenProfile={() => setProfileConfigOpen(true)}
+        onLogout={onLogout}
       />
       <main className="main">{content}</main>
 
@@ -216,7 +217,6 @@ function App({ teacher, onLogout }) {
           activePlan={activePlan}
           onPlanChange={changePlan}
           onProfileChange={saveTeacherProfile}
-          onLogout={onLogout}
           onClose={() => setProfileConfigOpen(false)}
         />
       )}

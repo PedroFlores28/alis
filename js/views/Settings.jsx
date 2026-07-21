@@ -198,7 +198,7 @@ function SettingsView({ teacher, studentsCount, activePlan, onPlanChange }) {
   );
 }
 
-function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, onProfileChange, onLogout, onClose }) {
+function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, onProfileChange, onClose }) {
   const [tab, setTab] = React.useState("membresia");
   const [profile, setProfile] = React.useState({
     name: teacher.name || "",
@@ -373,15 +373,6 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
                   </div>
                 </section>
 
-                <section className="profile-signout-card">
-                  <div>
-                    <strong>Cerrar sesión</strong>
-                    <p>Salir de ALIS en este dispositivo.</p>
-                  </div>
-                  <button className="btn btn--ghost profile-logout" type="button" onClick={onLogout}>
-                    Cerrar sesión
-                  </button>
-                </section>
               </aside>
             </form>
           ) : null}

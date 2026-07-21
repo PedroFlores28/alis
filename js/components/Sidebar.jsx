@@ -40,7 +40,7 @@ function AreaSelector({ activeSubject, onChange }) {
   );
 }
 
-function Sidebar({ route, teacher, activeSubject, onNavigate, onSubject, onRuta, planName, onOpenProfile }) {
+function Sidebar({ route, teacher, activeSubject, onNavigate, onSubject, onRuta, planName, onOpenProfile, onLogout }) {
   const inStudents = route.view === "alumnos" || route.view === "perfil";
   const inRuta = route.view === "ruta";
   const count = studentsOf(activeSubject).length;
@@ -90,6 +90,10 @@ function Sidebar({ route, teacher, activeSubject, onNavigate, onSubject, onRuta,
           <span className="sb-profile-plan"><span className="sb-plan-dot" />Plan {planName || "Aula"}</span>
         </div>
         <span className="sb-profile-chev"><Icon name="chevron" size={16} /></span>
+      </button>
+      <button className="sb-logout" type="button" onClick={onLogout}>
+        <Icon name="arrowLeft" size={15} />
+        <span>Cerrar sesión</span>
       </button>
     </aside>
   );
