@@ -47,8 +47,9 @@ input{font-family:inherit}
 .sb-profile-plan{font-size:12px;color:var(--sidebar-muted);display:flex;align-items:center;gap:6px}
 .sb-plan-dot{width:6px;height:6px;border-radius:50%;background:var(--good)}
 .sb-profile-chev{color:var(--sidebar-muted)}
-.sb-logout{display:flex;align-items:center;gap:8px;width:100%;margin-top:5px;padding:7px 11px;border-radius:9px;color:var(--sidebar-muted);font-size:12px;font-weight:600;text-align:left;transition:background .14s,color .14s}
-.sb-logout:hover{background:rgba(255,255,255,.06);color:#fff}
+.sb-logout{display:flex;align-items:center;gap:10px;width:100%;margin-top:5px;padding:9px 11px;border-radius:9px;color:#ef5350;font-size:12.5px;font-weight:600;text-align:left;transition:background .14s,color .14s}
+.sb-logout svg{color:#a56b4f}
+.sb-logout:hover{background:rgba(239,83,80,.09);color:#ff6b67}
 .sb-link-count{background:var(--sidebar-3);color:var(--sidebar-muted);font-size:11.5px;font-weight:600;padding:1px 8px;border-radius:20px;line-height:1.5}
 .sb-link.is-active .sb-link-count{background:#2e2e2e;color:#eee}
 .sb-divider{height:1px;background:var(--sidebar-line);margin:14px 6px}

@@ -92,7 +92,7 @@ function Sidebar({ route, teacher, activeSubject, onNavigate, onSubject, onRuta,
         <span className="sb-profile-chev"><Icon name="chevron" size={16} /></span>
       </button>
       <button className="sb-logout" type="button" onClick={onLogout}>
-        <Icon name="arrowLeft" size={15} />
+        <Icon name="logout" size={16} />
         <span>Cerrar sesión</span>
       </button>
     </aside>
