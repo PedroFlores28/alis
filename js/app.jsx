@@ -167,7 +167,6 @@ function App({ teacher, onLogout }) {
         studentsCount={students.length}
         activePlan={activePlan}
         onPlanChange={changePlan}
-        onLogout={onLogout}
       />
     );
   } else {

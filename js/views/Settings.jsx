@@ -46,6 +46,9 @@ const ALIS_PLANS = [
     description: "Una configuración a medida para colegios e instituciones.",
   },
 ];
+const ALIS_INSTITUTION_WHATSAPP =
+  "https://wa.me/51987654321?text=" +
+  encodeURIComponent("Hola asesor de Fibee, quisiera cotizar un Plan Institución personalizado para ALIS.");
 
 function planById(id) {
   return ALIS_PLANS.find((plan) => plan.id === id) || ALIS_PLANS[1];
@@ -60,7 +63,7 @@ function PlanFeature({ children }) {
   );
 }
 
-function SettingsView({ teacher, studentsCount, activePlan, onPlanChange, onLogout }) {
+function SettingsView({ teacher, studentsCount, activePlan, onPlanChange }) {
   const selected = planById(activePlan);
   const usage = selected.students
     ? Math.min(100, Math.round((studentsCount / selected.students) * 100))
@@ -68,7 +71,7 @@ function SettingsView({ teacher, studentsCount, activePlan, onPlanChange, onLogo
 
   const activate = (plan) => {
     if (plan.id === "institucion") {
-      alert("La cotización institucional se configura según alumnos, docentes y uso de IA.");
+      window.open(ALIS_INSTITUTION_WHATSAPP, "_blank", "noopener,noreferrer");
       return;
     }
     if (plan.id === activePlan) return;
@@ -98,7 +101,6 @@ function SettingsView({ teacher, studentsCount, activePlan, onPlanChange, onLogo
               <p>{teacher.email || "Cuenta vinculada con Google"}</p>
             </div>
           </div>
-          <button className="btn btn--ghost" onClick={onLogout}>Cerrar sesión</button>
         </section>
 
         <section className="membership-current">
@@ -213,7 +215,7 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
 
   const selectPlan = (plan) => {
     if (plan.id === "institucion") {
-      alert("La cotización institucional se configura según alumnos, docentes y uso de IA.");
+      window.open(ALIS_INSTITUTION_WHATSAPP, "_blank", "noopener,noreferrer");
       return;
     }
     if (plan.id === activePlan) return;
