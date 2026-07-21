@@ -334,7 +334,7 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
                 </section>
 
                 <button className="profile-save-button" type="submit">
-                  <Icon name="check" size={15} />
+                  <Icon name={profileSaved ? "check" : "save"} size={15} />
                   {profileSaved ? "Configuración guardada" : "Guardar configuración"}
                 </button>
               </div>

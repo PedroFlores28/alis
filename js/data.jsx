@@ -25,6 +25,7 @@ const Icon = ({ name, size = 20, stroke = 1.6, style }) => {
     cap: <><path {...p} d="m12 4 9 4-9 4-9-4 9-4Z" /><path {...p} d="M6 9.5V14c0 1.5 2.7 3 6 3s6-1.5 6-3V9.5" /><path {...p} d="M21 8v5" /></>,
     arrowLeft: <><path {...p} d="M15 6 9 12l6 6" /></>,
     logout: <><path {...p} d="M10 4H5.5A1.5 1.5 0 0 0 4 5.5v13A1.5 1.5 0 0 0 5.5 20H10" /><path {...p} d="M14 8l4 4-4 4M18 12H9" /></>,
+    save: <><path {...p} d="M5 3.5h11l3 3V20H5z" /><path {...p} d="M8 3.5v6h8v-6M8 20v-6h8v6" /></>,
     x: <><path {...p} d="m6 6 12 12M18 6 6 18" /></>,
     flag: <><path {...p} d="M5 21V4" /><path {...p} d="M5 4.5h11l-2 3.5 2 3.5H5" /></>,
     download: <><path {...p} d="M12 4v12" /><path {...p} d="m7.5 11.5 4.5 4.5 4.5-4.5" /><path {...p} d="M4 18v.5A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5V18" /></>,
