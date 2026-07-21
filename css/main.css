@@ -457,14 +457,16 @@ input{font-family:inherit}
 .membership-check{width:18px;height:18px;border-radius:50%;background:var(--good-bg);color:var(--good-ink);display:grid;place-items:center;flex-shrink:0}
 .membership-btn{width:100%;justify-content:center}
 .membership-note{text-align:center;font-size:12px;color:var(--muted)}
-.profile-config-modal{width:min(760px,100%);max-height:90vh;background:var(--surface);border-radius:20px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;animation:pop .22s cubic-bezier(.2,.8,.2,1)}
-.profile-config-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px 14px}
+.profile-config-modal{width:min(1000px,100%);max-height:92vh;background:var(--surface);border-radius:14px;box-shadow:var(--sh-lg);overflow:hidden;display:flex;flex-direction:column;animation:pop .22s cubic-bezier(.2,.8,.2,1)}
+.profile-config-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 20px}
+.profile-config-title{display:flex;align-items:center;gap:8px}
+.profile-config-title>svg{color:#9b72cf}
 .profile-config-head h2{font-size:20px;font-weight:750;letter-spacing:-.02em}
-.profile-config-tabs{display:flex;gap:6px;padding:0 20px 12px;border-bottom:1px solid var(--line-2)}
-.profile-config-tabs button{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:9px;font-size:13px;font-weight:650;color:var(--muted)}
-.profile-config-tabs button:hover{background:var(--bg);color:var(--ink)}
-.profile-config-tabs button.is-active{background:var(--ink);color:#fff}
-.profile-config-tabs button.is-active svg{color:var(--brand)}
+.profile-config-tabs{display:flex;gap:8px;padding:4px 20px 12px;border-bottom:1px solid var(--line)}
+.profile-config-tabs button{display:inline-flex;align-items:center;gap:7px;padding:8px 16px;border:1px solid var(--line);border-radius:999px;font-size:13px;font-weight:650;color:var(--muted);background:var(--surface)}
+.profile-config-tabs button:hover{border-color:var(--muted-2);color:var(--ink)}
+.profile-config-tabs button.is-active{background:#f8f6fb;border-color:#b9a6cf;color:#5e4778}
+.profile-config-tabs button.is-active svg{color:#73548f}
 .profile-config-body{padding:20px;overflow-y:auto}
 .profile-tab{display:flex;flex-direction:column;gap:18px;animation:fade .18s ease}
 .profile-identity{display:flex;align-items:center;gap:13px;padding-bottom:16px;border-bottom:1px solid var(--line-2)}
@@ -492,6 +494,28 @@ input{font-family:inherit}
 .profile-plan-copy em{font-size:11px;color:var(--muted);font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .profile-plan-price{font-size:12px;font-weight:750;color:var(--ink-2);flex-shrink:0}
 .profile-plan-option.is-active .profile-plan-price{color:var(--attn-ink)}
+.profile-membership-tab{gap:20px}
+.profile-plans-heading{text-align:center}
+.profile-plans-heading h3{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.profile-plans-heading p{font-size:13px;color:var(--muted);margin-top:3px}
+.profile-plan-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch}
+.profile-plan-card{display:flex;flex-direction:column;justify-content:space-between;gap:18px;min-width:0;min-height:300px;border:1px solid var(--line);border-radius:13px;padding:16px 14px;background:var(--surface);box-shadow:0 2px 4px rgba(17,24,39,.03)}
+.profile-plan-card.is-active{border-color:#b9a6cf;box-shadow:0 0 0 1px rgba(115,84,143,.12)}
+.profile-plan-card h4{font-size:14px;font-weight:800}
+.profile-plan-card h4 span{font-size:15px}
+.profile-card-price{display:flex;align-items:baseline;gap:5px;margin-top:6px;min-height:30px}
+.profile-card-price strong{font-size:21px;font-weight:850;letter-spacing:-.03em;text-transform:capitalize}
+.profile-card-price span{font-size:11px;color:var(--muted)}
+.profile-plan-picked{font-size:10px;font-weight:800;color:#d58a00;margin-top:5px}
+.profile-plan-card ul{margin:16px 0 0 14px;display:flex;flex-direction:column;gap:4px}
+.profile-plan-card li{font-size:11.5px;color:var(--muted);line-height:1.25}
+.profile-card-action{width:100%;min-height:30px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font-size:11.5px;font-weight:700;color:var(--ink);transition:border-color .14s,background .14s}
+.profile-card-action:hover:not(:disabled){border-color:var(--muted-2);background:var(--bg)}
+.profile-card-action:disabled{color:#76568e;background:#f8f6fb;border-color:#cdbbdd;cursor:default}
+.profile-card-action.is-primary{background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.profile-card-action.is-primary:hover{background:var(--brand-deep);border-color:var(--brand-deep)}
+.profile-billing-note{display:flex;align-items:center;justify-content:center;gap:6px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fafbfc;font-size:11.5px;color:var(--muted)}
+.profile-billing-note strong{color:var(--ink-2)}
 .profile-usage-summary{display:flex;align-items:center;justify-content:space-between;gap:16px}
 .profile-usage-summary h3{font-size:18px;font-weight:750}
 .profile-usage-summary p:not(.settings-eyebrow){font-size:12.5px;color:var(--muted);margin-top:2px}
@@ -506,6 +530,7 @@ input{font-family:inherit}
 .profile-usage-note{font-size:11.5px;color:var(--muted);text-align:center}
 @media(max-width:1200px){
   .membership-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .profile-plan-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(max-width:760px){
   .membership-current{grid-template-columns:1fr}
@@ -513,7 +538,7 @@ input{font-family:inherit}
   .settings-account{align-items:flex-start;flex-direction:column}
   .profile-config-tabs{overflow-x:auto}
   .profile-config-tabs button{white-space:nowrap}
-  .profile-info-grid,.profile-plan-list{grid-template-columns:1fr}
+  .profile-info-grid,.profile-plan-list,.profile-plan-cards{grid-template-columns:1fr}
 }
 
 /* ---------- Ruta pedagógica ---------- */

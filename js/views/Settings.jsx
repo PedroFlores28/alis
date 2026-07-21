@@ -197,7 +197,7 @@ function SettingsView({ teacher, studentsCount, activePlan, onPlanChange, onLogo
 }
 
 function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, onLogout, onClose }) {
-  const [tab, setTab] = React.useState("perfil");
+  const [tab, setTab] = React.useState("membresia");
   const selected = planById(activePlan);
   const usage = selected.students
     ? Math.min(100, Math.round((studentsCount / selected.students) * 100))
@@ -217,9 +217,9 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
     <div className="modal-scrim" onClick={onClose}>
       <section className="profile-config-modal" onClick={(event) => event.stopPropagation()}>
         <header className="profile-config-head">
-          <div>
-            <p className="settings-eyebrow">Cuenta ALIS</p>
-            <h2>Perfil y membresía</h2>
+          <div className="profile-config-title">
+            <Icon name="settings" size={20} />
+            <h2>Configuración del sistema</h2>
           </div>
           <button className="modal-x" type="button" onClick={onClose} aria-label="Cerrar">
             <Icon name="x" size={18} />
@@ -229,8 +229,8 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
         <nav className="profile-config-tabs" aria-label="Configuración de cuenta">
           {[
             { id: "perfil", label: "Perfil docente", icon: "students" },
-            { id: "membresia", label: "Membresía", icon: "cap" },
-            { id: "uso", label: "Uso y límites", icon: "target" },
+            { id: "membresia", label: "Plan de membresía", icon: "cap" },
+            { id: "uso", label: "Uso / Límites", icon: "target" },
           ].map((item) => (
             <button
               key={item.id}
@@ -287,39 +287,59 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
           ) : null}
 
           {tab === "membresia" ? (
-            <div className="profile-tab">
-              <div className="profile-current-plan">
-                <div>
-                  <p className="settings-eyebrow">Plan actual</p>
-                  <h3>{selected.icon} {selected.name}</h3>
-                </div>
-                <strong>{selected.price ? `S/ ${selected.price} / mes` : "A medida"}</strong>
+            <div className="profile-tab profile-membership-tab">
+              <div className="profile-plans-heading">
+                <h3>Planes ALIS para docentes</h3>
+                <p>Escoge el plan ideal según la cantidad de alumnos y el uso de herramientas con IA.</p>
               </div>
 
-              <div className="profile-plan-list">
+              <div className="profile-plan-cards">
                 {ALIS_PLANS.map((plan) => {
                   const isActive = plan.id === activePlan;
                   return (
-                    <button
+                    <article
                       key={plan.id}
-                      type="button"
-                      className={"profile-plan-option" + (isActive ? " is-active" : "")}
-                      onClick={() => selectPlan(plan)}
-                      disabled={isActive}
+                      className={"profile-plan-card" + (isActive ? " is-active" : "")}
                     >
-                      <span className="profile-plan-emoji">{plan.icon}</span>
-                      <span className="profile-plan-copy">
-                        <strong>{plan.name}</strong>
-                        <em>
-                          {plan.students ? `${plan.students} alumnos · ${plan.analyses} análisis/mes` : "Límites personalizados"}
-                        </em>
-                      </span>
-                      <span className="profile-plan-price">
-                        {isActive ? "Activo" : plan.price ? `S/ ${plan.price}` : "Cotizar"}
-                      </span>
-                    </button>
+                      <div>
+                        <h4>Plan {plan.name} <span>{plan.icon}</span></h4>
+                        <div className="profile-card-price">
+                          {plan.price ? (
+                            <>
+                              <strong>S/. {plan.price}</strong>
+                              <span>/ mes</span>
+                            </>
+                          ) : (
+                            <strong>A medida</strong>
+                          )}
+                        </div>
+                        {plan.recommended ? <p className="profile-plan-picked">★ EL MÁS ELEGIDO</p> : null}
+                        <ul>
+                          <li>{plan.students ? `Hasta ${plan.students} alumnos` : "Alumnos ilimitados"}</li>
+                          <li>{plan.analyses ? `${plan.analyses} análisis de evidencias` : "Análisis personalizados"}</li>
+                          <li>{plan.materials ? `${plan.materials} materiales con IA` : "Materiales personalizados"}</li>
+                          <li>{plan.teachers ? `${plan.teachers} ${plan.teachers === 1 ? "docente" : "docentes"}` : "Docentes según necesidad"}</li>
+                          <li>Competencias MINEDU</li>
+                        </ul>
+                      </div>
+                      <button
+                        type="button"
+                        className={"profile-card-action" + (plan.id === "institucion" ? " is-primary" : "")}
+                        onClick={() => selectPlan(plan)}
+                        disabled={isActive}
+                      >
+                        {isActive ? "Plan actual" : plan.id === "institucion" ? "Consultar" : "Elegir plan"}
+                      </button>
+                    </article>
                   );
                 })}
+              </div>
+
+              <div className="profile-billing-note">
+                <span>💡</span>
+                <div>
+                  <strong>Nota de facturación:</strong> Los pagos y cambios de plan se coordinarán con el equipo de ALIS.
+                </div>
               </div>
             </div>
           ) : null}
