@@ -7,6 +7,13 @@ const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
 
 function App({ teacher, onLogout }) {
   const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [teacherProfile, setTeacherProfile] = useState(() => {
+    try {
+      return { ...teacher, ...JSON.parse(localStorage.getItem("alis_teacher_profile") || "{}") };
+    } catch {
+      return teacher;
+    }
+  });
   const [activeSubject, setActiveSubject] = useState("mate");
   const [activeCompetence, setActiveCompetence] = useState(() =>
     (typeof defaultCompetenceId === "function" ? defaultCompetenceId("mate") : "c23")
@@ -28,6 +35,12 @@ function App({ teacher, onLogout }) {
   const changePlan = (planId) => {
     localStorage.setItem("alis_active_plan", planId);
     setActivePlan(planId);
+  };
+
+  const saveTeacherProfile = (profile) => {
+    const nextProfile = { ...teacherProfile, ...profile };
+    localStorage.setItem("alis_teacher_profile", JSON.stringify(nextProfile));
+    setTeacherProfile(nextProfile);
   };
 
   const pullFromWindow = () => {
@@ -150,7 +163,7 @@ function App({ teacher, onLogout }) {
   } else if (route.view === "config") {
     content = (
       <SettingsView
-        teacher={teacher}
+        teacher={teacherProfile}
         studentsCount={students.length}
         activePlan={activePlan}
         onPlanChange={changePlan}
@@ -187,6 +200,7 @@ function App({ teacher, onLogout }) {
     <>
       <Sidebar
         route={route}
+        teacher={teacherProfile}
         activeSubject={activeSubject}
         onNavigate={navigate}
         onSubject={changeSubject}
@@ -198,10 +212,11 @@ function App({ teacher, onLogout }) {
 
       {profileConfigOpen && (
         <ProfileConfigModal
-          teacher={teacher}
+          teacher={teacherProfile}
           studentsCount={students.length}
           activePlan={activePlan}
           onPlanChange={changePlan}
+          onProfileChange={saveTeacherProfile}
           onLogout={onLogout}
           onClose={() => setProfileConfigOpen(false)}
         />

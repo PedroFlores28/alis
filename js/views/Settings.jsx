@@ -196,8 +196,16 @@ function SettingsView({ teacher, studentsCount, activePlan, onPlanChange, onLogo
   );
 }
 
-function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, onLogout, onClose }) {
+function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, onProfileChange, onLogout, onClose }) {
   const [tab, setTab] = React.useState("membresia");
+  const [profile, setProfile] = React.useState({
+    name: teacher.name || "",
+    institution: teacher.institution || "",
+    role: teacher.role || "Docente",
+    mainArea: teacher.mainArea || "Matemática",
+    educationLevel: teacher.educationLevel || "Primaria",
+  });
+  const [profileSaved, setProfileSaved] = React.useState(false);
   const selected = planById(activePlan);
   const usage = selected.students
     ? Math.min(100, Math.round((studentsCount / selected.students) * 100))
@@ -211,6 +219,17 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
     if (plan.id === activePlan) return;
     if (!confirm(`¿Cambiar al Plan ${plan.name} por S/ ${plan.price} al mes?`)) return;
     onPlanChange(plan.id);
+  };
+
+  const updateProfile = (field, value) => {
+    setProfile((current) => ({ ...current, [field]: value }));
+    setProfileSaved(false);
+  };
+
+  const saveProfile = (event) => {
+    event.preventDefault();
+    onProfileChange(profile);
+    setProfileSaved(true);
   };
 
   return (
@@ -246,44 +265,123 @@ function ProfileConfigModal({ teacher, studentsCount, activePlan, onPlanChange, 
 
         <div className="profile-config-body">
           {tab === "perfil" ? (
-            <div className="profile-tab">
-              <div className="profile-identity">
-                <div className="settings-account-avatar">{TEACHER.initials}</div>
-                <div>
-                  <h3>{teacher.name || TEACHER.name}</h3>
-                  <p>{teacher.email || "Cuenta vinculada con Google"}</p>
-                </div>
-              </div>
+            <form className="profile-tab profile-form-layout" onSubmit={saveProfile}>
+              <div className="profile-form-column">
+                <section className="profile-form-card">
+                  <div className="profile-form-card-title">
+                    <Icon name="students" size={18} />
+                    <h3>Perfil del docente</h3>
+                    <span>Plan: {selected.name}</span>
+                  </div>
+                  <label className="profile-field">
+                    <span>Nombre y apellido</span>
+                    <input
+                      value={profile.name}
+                      onChange={(event) => updateProfile("name", event.target.value)}
+                      placeholder="Tu nombre completo"
+                      required
+                    />
+                  </label>
+                  <label className="profile-field">
+                    <span>Correo de la cuenta</span>
+                    <input value={teacher.email || "Cuenta vinculada con Google"} disabled />
+                  </label>
+                </section>
 
-              <div className="profile-info-grid">
-                <div>
-                  <span>Tipo de cuenta</span>
-                  <strong>Docente / tutor</strong>
-                </div>
-                <div>
-                  <span>Plan actual</span>
-                  <strong>{selected.name}</strong>
-                </div>
-                <div>
-                  <span>Alumnos registrados</span>
-                  <strong>{studentsCount}</strong>
-                </div>
-                <div>
-                  <span>Currículo</span>
-                  <strong>MINEDU · CNEB</strong>
-                </div>
-              </div>
+                <section className="profile-form-card">
+                  <div className="profile-form-card-title">
+                    <Icon name="book" size={18} />
+                    <h3>Información pedagógica</h3>
+                  </div>
+                  <label className="profile-field">
+                    <span>Institución educativa</span>
+                    <input
+                      value={profile.institution}
+                      onChange={(event) => updateProfile("institution", event.target.value)}
+                      placeholder="Nombre de la institución (opcional)"
+                    />
+                  </label>
+                  <div className="profile-field-row">
+                    <label className="profile-field">
+                      <span>Rol</span>
+                      <select value={profile.role} onChange={(event) => updateProfile("role", event.target.value)}>
+                        <option>Docente</option>
+                        <option>Tutor</option>
+                        <option>Coordinador pedagógico</option>
+                        <option>Director</option>
+                      </select>
+                    </label>
+                    <label className="profile-field">
+                      <span>Nivel educativo</span>
+                      <select value={profile.educationLevel} onChange={(event) => updateProfile("educationLevel", event.target.value)}>
+                        <option>Primaria</option>
+                        <option>Secundaria</option>
+                        <option>Primaria y secundaria</option>
+                      </select>
+                    </label>
+                  </div>
+                  <label className="profile-field">
+                    <span>Área principal</span>
+                    <select value={profile.mainArea} onChange={(event) => updateProfile("mainArea", event.target.value)}>
+                      <option>Matemática</option>
+                      <option>Comunicación</option>
+                      <option>Inglés</option>
+                      <option>Varias áreas</option>
+                    </select>
+                  </label>
+                </section>
 
-              <div className="profile-danger-row">
-                <div>
-                  <strong>Cerrar sesión</strong>
-                  <p>Sal de tu cuenta de ALIS en este dispositivo.</p>
-                </div>
-                <button className="btn btn--ghost profile-logout" type="button" onClick={onLogout}>
-                  Cerrar sesión
+                <button className="profile-save-button" type="submit">
+                  <Icon name="check" size={15} />
+                  {profileSaved ? "Configuración guardada" : "Guardar configuración"}
                 </button>
               </div>
-            </div>
+
+              <aside className="profile-account-column">
+                <section className="profile-form-card">
+                  <p className="settings-eyebrow">Cuenta en uso</p>
+                  <div className="profile-account-plan">
+                    <div>
+                      <strong>Plan {selected.name}</strong>
+                      <span>{selected.price ? `S/. ${selected.price} al mes` : "Plan personalizado"}</span>
+                    </div>
+                    <span className="profile-active-chip">Activo</span>
+                  </div>
+                  <button type="button" className="profile-upgrade-link" onClick={() => setTab("membresia")}>
+                    Ver o cambiar plan
+                  </button>
+                </section>
+
+                <section className="profile-form-card">
+                  <div className="profile-form-card-title">
+                    <Icon name="target" size={18} />
+                    <h3>Resumen de ALIS</h3>
+                  </div>
+                  <div className="profile-summary-row">
+                    <span>Alumnos activos</span>
+                    <strong>{studentsCount} / {selected.students || "∞"}</strong>
+                  </div>
+                  <div className="profile-summary-row">
+                    <span>Currículo</span>
+                    <strong>MINEDU · CNEB</strong>
+                  </div>
+                  <div className="profile-summary-row">
+                    <span>Área principal</span>
+                    <strong>{profile.mainArea}</strong>
+                  </div>
+                </section>
+
+                <section className="profile-signout-card">
+                  <div>
+                    <strong>Cerrar sesión</strong>
+                    <p>Salir de ALIS en este dispositivo.</p>
+                  </div>
+                  <button className="btn btn--ghost profile-logout" type="button" onClick={onLogout}>
+                    Cerrar sesión
+                  </button>
+                </section>
+              </aside>
+            </form>
           ) : null}
 
           {tab === "membresia" ? (
