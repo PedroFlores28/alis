@@ -8,9 +8,9 @@ ALIS es un panel **solo para docentes/tutores**. Login con Google, alumnos propi
 - Gestión de alumnos (crear / editar / eliminar) por docente
 - 3 materias fijas: Matemática, Inglés, Comunicación
 - Subida real de evidencia (foto/PDF, web y móvil)
-- Análisis IA de evidencia (Claude Haiku · `analyze-evidence`)
+- Análisis IA de evidencia (GPT-4o-mini · `analyze-evidence`) con descripción textual de figuras
 - Sugerencias automáticas y pendientes tras cada análisis
-- Generación de material de refuerzo con IA + descarga PDF (`generate-material`)
+- Generación de material de refuerzo con GPT-4o-mini + descarga PDF (`generate-material`)
 - Base CNEB mínima (competencias por grado/materia)
 - Ruta Pedagógica: nivel actual → objetivo CNEB
 - Historial y métricas simples por alumno/materia
@@ -21,7 +21,7 @@ ALIS es un panel **solo para docentes/tutores**. Login con Google, alumnos propi
 2. Ejecuta **`supabase/mvp-setup.sql`** en el SQL Editor (alumnos, CNEB, evidencias, Storage)
 3. Auth → Google provider + URL Configuration (`https://alis.fibee.pro`)
 4. Despliega Edge Functions: `analyze-evidence` y `generate-material` (ver `supabase/functions/README.md`)
-5. Secret `ANTHROPIC_API_KEY` en Edge Functions → Secrets
+5. Secret `OPENAI_API_KEY` en Edge Functions → Secrets (análisis y material)
 6. (Opcional) `supabase/suggestions-setup.sql` para persistir sugerencias en Supabase
 
 ## Pendiente del MVP

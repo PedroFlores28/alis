@@ -147,7 +147,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 
             {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
             {stage === "uploading" && (
-              <div className="analyzing"><span className="spinner" />Subiendo y analizando con Claude (Alis)…</div>
+              <div className="analyzing"><span className="spinner" />Subiendo y analizando con GPT Mini (Alis)…</div>
             )}
           </>
         )}
@@ -167,14 +167,41 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
                 <span><strong>Competencia:</strong> {analysis.cnebCompetence}</span>
               </div>
             )}
+
             <div className="result-block">
-              <p className="result-h"><span className="ai-badge ai-badge--sm"><Icon name="sparkles" size={13} /></span> Lectura de Alis</p>
+              <p className="result-h">1. Figura / material visto</p>
+              <p className="result-text">{analysis.graphicDescription || "Sin descripción visual."}</p>
+              {(analysis.graphicElements || []).length > 0 && (
+                <ul className="result-elements">
+                  {analysis.graphicElements.map((el, i) => <li key={i}>{el}</li>)}
+                </ul>
+              )}
+            </div>
+
+            <div className="result-block">
+              <p className="result-h">2. Objetivo del ejercicio</p>
+              <p className="result-text">{analysis.exerciseGoal || "Sin objetivo identificado."}</p>
+            </div>
+
+            <div className="result-block">
+              <p className="result-h">3. Diagnóstico del alumno</p>
+              {analysis.studentDiagnosis?.summary && (
+                <p className="result-text">{analysis.studentDiagnosis.summary}</p>
+              )}
               <ul className="result-list">
-                {(analysis.obs || []).map((o, i) => (
-                  <li key={i}><Icon name={o.ok ? "check" : "alert"} size={15} style={{ color: o.ok ? "var(--good)" : "var(--risk)" }} /> {o.t}</li>
+                {(analysis.studentDiagnosis?.strengths || []).map((t, i) => (
+                  <li key={"ok-" + i}><Icon name="check" size={15} style={{ color: "var(--good)" }} /> {t}</li>
                 ))}
+                {(analysis.studentDiagnosis?.errors || []).map((t, i) => (
+                  <li key={"err-" + i}><Icon name="alert" size={15} style={{ color: "var(--risk)" }} /> {t}</li>
+                ))}
+                {!(analysis.studentDiagnosis?.strengths || []).length && !(analysis.studentDiagnosis?.errors || []).length &&
+                  (analysis.obs || []).map((o, i) => (
+                    <li key={i}><Icon name={o.ok ? "check" : "alert"} size={15} style={{ color: o.ok ? "var(--good)" : "var(--risk)" }} /> {o.t}</li>
+                  ))}
               </ul>
             </div>
+
             <div className="result-next"><span>Siguiente: {analysis.next}</span></div>
           </div>
         )}
@@ -374,6 +401,9 @@ function GenerateModal({ preset, students, analysis, onClose }) {
 function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDeleted, onClose }) {
   const [label, setLabel] = useState(entry?.label || "");
   const [score, setScore] = useState(entry?.score == null ? "" : String(entry.score));
+  const [graphicDescription, setGraphicDescription] = useState(entry?.graphicDescription || "");
+  const [exerciseGoal, setExerciseGoal] = useState(entry?.exerciseGoal || "");
+  const [diagnosisSummary, setDiagnosisSummary] = useState(entry?.studentDiagnosis?.summary || entry?.summary || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -381,7 +411,17 @@ function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDele
     setError("");
     setLoading(true);
     try {
-      const saved = await updateStudentHistoryEntry(student.id, teacherId, entryKey, { label, score });
+      const saved = await updateStudentHistoryEntry(student.id, teacherId, entryKey, {
+        label,
+        score,
+        graphicDescription,
+        exerciseGoal,
+        summary: diagnosisSummary,
+        studentDiagnosis: {
+          ...(entry?.studentDiagnosis || {}),
+          summary: diagnosisSummary,
+        },
+      });
       onSaved?.(saved);
     } catch (err) {
       setError(err.message || "No se pudo guardar.");
@@ -406,7 +446,7 @@ function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDele
     <Modal
       icon="pencil"
       title="Editar resultado"
-      sub={entry?.fileName ? `Evidencia · ${entry.fileName}` : "Corrige el título o la nota de este resultado."}
+      sub={entry?.fileName ? `Evidencia · ${entry.fileName}` : "Corrige título, nota y contenido del análisis."}
       onClose={onClose}
     >
       <div className="modal-body">
@@ -428,6 +468,36 @@ function EditHistoryModal({ student, entry, entryKey, teacherId, onSaved, onDele
           value={score}
           onChange={(e) => setScore(e.target.value)}
           placeholder="0–100 (vacío = sin nota)"
+          disabled={loading}
+        />
+
+        <label className="field-label">1. Figura / material visto</label>
+        <textarea
+          className="form-input form-textarea"
+          rows={3}
+          value={graphicDescription}
+          onChange={(e) => setGraphicDescription(e.target.value)}
+          placeholder="Descripción en texto de la figura o material"
+          disabled={loading}
+        />
+
+        <label className="field-label">2. Objetivo del ejercicio</label>
+        <textarea
+          className="form-input form-textarea"
+          rows={2}
+          value={exerciseGoal}
+          onChange={(e) => setExerciseGoal(e.target.value)}
+          placeholder="Qué pedía el ejercicio"
+          disabled={loading}
+        />
+
+        <label className="field-label">3. Diagnóstico del alumno</label>
+        <textarea
+          className="form-input form-textarea"
+          rows={3}
+          value={diagnosisSummary}
+          onChange={(e) => setDiagnosisSummary(e.target.value)}
+          placeholder="Resumen de aciertos y errores"
           disabled={loading}
         />
 

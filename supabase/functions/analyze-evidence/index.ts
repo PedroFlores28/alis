@@ -1,5 +1,5 @@
 // Supabase Edge Function: analyze-evidence
-// Secret requerido: ANTHROPIC_API_KEY
+// Secret requerido: OPENAI_API_KEY
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors = {
@@ -23,12 +23,23 @@ function bytesToBase64(bytes) {
   return btoa(binary);
 }
 
+function extractOpenAIText(aiJson) {
+  const content = aiJson?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => (typeof part === "string" ? part : part?.text || ""))
+      .join("\n");
+  }
+  return "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) return json({ error: "Falta ANTHROPIC_API_KEY en Secrets" }, 500);
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) return json({ error: "Falta OPENAI_API_KEY en Secrets" }, 500);
 
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "No autorizado" }, 401);
@@ -71,22 +82,24 @@ Deno.serve(async (req) => {
     }
 
     const isPdf = mediaType.includes("pdf") || /\.pdf$/i.test(fileName || "");
-    const contentBlock = isPdf
-      ? {
-          type: "document",
-          source: { type: "base64", media_type: "application/pdf", data: b64 },
-        }
-      : {
-          type: "image",
-          source: {
-            type: "base64",
-            media_type: mediaType.startsWith("image/") ? mediaType : "image/jpeg",
-            data: b64,
-          },
-        };
+    const safeMime = mediaType.startsWith("image/")
+      ? mediaType
+      : isPdf
+        ? "application/pdf"
+        : "image/jpeg";
 
-    const prompt = `Eres Alis, asistente pedagógico para docentes en Perú.
+    const prompt = `Eres Alis, asistente pedagógico para docentes en Perú (CNEB/MINEDU).
 Analiza la evidencia académica del alumno y responde SOLO JSON válido (sin markdown).
+
+IMPORTANTE sobre gráficos/figuras:
+- NO intentes redibujar, regenerar ni inventar SVG/Markdown de la figura.
+- Describe en texto preciso lo que ves (geometría, mapas conceptuales, viñetas, diagramas, tablas, etc.).
+- El docente debe entender a qué material hace referencia el alumno y dónde se equivocó, solo leyendo texto.
+
+Estructura el análisis en 3 etapas:
+1) Reconocimiento y descripción del elemento gráfico / material visto.
+2) Identificación del objetivo pedagógico o pregunta del ejercicio.
+3) Diagnóstico paso a paso del desempeño del alumno (aciertos y errores).
 
 Alumno: ${student.name}
 Grado: ${student.grade || ""}
@@ -105,6 +118,14 @@ Devuelve este JSON exacto:
   "topicTitle": string,
   "cnebCompetence": string|null,
   "cnebPerformance": string|null,
+  "graphicDescription": string,
+  "graphicElements": [string],
+  "exerciseGoal": string,
+  "studentDiagnosis": {
+    "strengths": [string],
+    "errors": [string],
+    "summary": string
+  },
   "obs": [{"ok": boolean, "t": string}],
   "next": string,
   "summary": string,
@@ -126,9 +147,14 @@ Devuelve este JSON exacto:
 }
 
 Reglas:
+- graphicDescription: párrafo claro de lo que aparece en la imagen (figura, etiquetas, datos visibles).
+- graphicElements: 2 a 8 elementos detectados (ej. "triángulo isósceles", "ángulo 14°", "personaje A").
+- exerciseGoal: qué pedía el ejercicio / objetivo pedagógico.
+- studentDiagnosis.strengths / errors: listas cortas y concretas.
+- studentDiagnosis.summary: síntesis del desempeño en 1-2 oraciones.
 - score 0-100 si puedes estimar; si no, null.
 - status según desempeño vs CNEB.
-- obs: 3 a 5 puntos concretos (aciertos y errores).
+- obs: 3 a 5 puntos concretos (aciertos y errores), coherentes con studentDiagnosis.
 - next: sugerencia breve de refuerzo alineada al CNEB.
 - gaps: 1 a 3 prerequisitos que le faltan (más básicos que el tema de la tarea).
 - learningPath: línea de sesiones de lo MÁS FÁCIL / básico hacia la META.
@@ -139,23 +165,48 @@ Reglas:
   - estimate = cantidad de sesiones de la ruta.
 - Sé honesto si la imagen es ilegible.`;
 
-    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+    const userContent = isPdf
+      ? [
+          {
+            type: "file",
+            file: {
+              filename: fileName || "evidencia.pdf",
+              file_data: `data:application/pdf;base64,${b64}`,
+            },
+          },
+          { type: "text", text: prompt },
+        ]
+      : [
+          {
+            type: "image_url",
+            image_url: {
+              url: `data:${safeMime};base64,${b64}`,
+              detail: "high",
+            },
+          },
+          { type: "text", text: prompt },
+        ];
+
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: "Bearer " + openaiKey,
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5",
-        max_tokens: 1800,
+        model: "gpt-4o-mini",
+        temperature: 0.2,
+        max_tokens: 2200,
+        response_format: { type: "json_object" },
         messages: [
           {
+            role: "system",
+            content:
+              "Eres Alis. Respondes únicamente JSON válido. Describes gráficos en texto preciso; nunca inventas SVG ni reconstrucciones visuales.",
+          },
+          {
             role: "user",
-            content: [
-              contentBlock,
-              { type: "text", text: prompt },
-            ],
+            content: userContent,
           },
         ],
       }),
@@ -163,11 +214,11 @@ Reglas:
 
     const aiJson = await aiRes.json();
     if (!aiRes.ok) {
-      console.error("Anthropic error", aiJson);
-      return json({ error: "Anthropic: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
+      console.error("OpenAI error", aiJson);
+      return json({ error: "OpenAI: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
     }
 
-    const text = (aiJson.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n");
+    const text = extractOpenAIText(aiJson);
     let analysis;
     try {
       const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
@@ -179,14 +230,43 @@ Reglas:
         topicTitle: cneb?.capacity || student.focus || "Evidencia",
         cnebCompetence: cneb?.competence || null,
         cnebPerformance: cneb?.performance || null,
+        graphicDescription: "No se pudo estructurar la descripción visual de la evidencia.",
+        graphicElements: [],
+        exerciseGoal: "Revisar manualmente el objetivo del ejercicio.",
+        studentDiagnosis: {
+          strengths: [],
+          errors: ["No se pudo parsear la respuesta de la IA."],
+          summary: text.slice(0, 400),
+        },
         obs: [{ ok: false, t: "No se pudo parsear la respuesta de la IA." }, { ok: true, t: text.slice(0, 400) }],
         next: "Revisar la evidencia manualmente y generar refuerzo.",
         summary: text.slice(0, 500),
+        gaps: [],
       };
     }
 
     analysis.cnebCompetence = analysis.cnebCompetence || cneb?.competence || null;
     analysis.cnebPerformance = analysis.cnebPerformance || cneb?.performance || null;
+    analysis.graphicDescription = String(analysis.graphicDescription || "").trim();
+    analysis.exerciseGoal = String(analysis.exerciseGoal || "").trim();
+    analysis.graphicElements = Array.isArray(analysis.graphicElements)
+      ? analysis.graphicElements.map((x) => String(x).trim()).filter(Boolean)
+      : [];
+    const diagnosis = analysis.studentDiagnosis && typeof analysis.studentDiagnosis === "object"
+      ? analysis.studentDiagnosis
+      : {};
+    analysis.studentDiagnosis = {
+      strengths: Array.isArray(diagnosis.strengths)
+        ? diagnosis.strengths.map((x) => String(x).trim()).filter(Boolean)
+        : [],
+      errors: Array.isArray(diagnosis.errors)
+        ? diagnosis.errors.map((x) => String(x).trim()).filter(Boolean)
+        : [],
+      summary: String(diagnosis.summary || analysis.summary || "").trim(),
+    };
+    if (!analysis.summary) {
+      analysis.summary = analysis.studentDiagnosis.summary || analysis.graphicDescription || "";
+    }
 
     if (evidenceId) {
       await supabase

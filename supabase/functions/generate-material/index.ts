@@ -1,5 +1,5 @@
 // Supabase Edge Function: generate-material
-// Secret requerido: ANTHROPIC_API_KEY
+// Secret requerido: OPENAI_API_KEY
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -12,12 +12,23 @@ function json(data, status = 200) {
   });
 }
 
+function extractOpenAIText(aiJson) {
+  const content = aiJson?.choices?.[0]?.message?.content;
+  if (typeof content === "string") return content;
+  if (Array.isArray(content)) {
+    return content
+      .map((part) => (typeof part === "string" ? part : part?.text || ""))
+      .join("\n");
+  }
+  return "";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) return json({ error: "Falta ANTHROPIC_API_KEY en Secrets" }, 500);
+    const openaiKey = Deno.env.get("OPENAI_API_KEY");
+    if (!openaiKey) return json({ error: "Falta OPENAI_API_KEY en Secrets" }, 500);
 
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "No autorizado" }, 401);
@@ -38,12 +49,17 @@ Deno.serve(async (req) => {
     const typeLabel = { practica: "práctica", quiz: "quiz", reto: "reto" }[type] || "práctica";
     const diffLabel = { facil: "fácil", graduada: "graduada", avanzada: "avanzada" }[difficulty] || "graduada";
 
+    const diagnosis = analysis?.studentDiagnosis || {};
     const focusHints = [
       student.focus,
       analysis?.next,
       analysis?.topicTitle,
+      analysis?.exerciseGoal,
+      analysis?.graphicDescription,
+      diagnosis.summary,
+      ...(Array.isArray(diagnosis.errors) ? diagnosis.errors : []),
       ...(Array.isArray(analysis?.obs) ? analysis.obs.filter((o) => o && o.ok === false).map((o) => o.t) : []),
-    ].filter(Boolean).slice(0, 6).join("\n- ");
+    ].filter(Boolean).slice(0, 8).join("\n- ");
 
     const prompt = `Eres Alis, asistente pedagógico para docentes en Perú (CNEB/MINEDU).
 Genera material de refuerzo REAL y usable en clase. Responde SOLO JSON válido (sin markdown).
@@ -80,32 +96,41 @@ Reglas:
 - Exactamente ${n} ejercicios en "exercises", numerados 1..${n}.
 - Enunciados claros, en español, nivel ${student.grade || "secundaria"}.
 - Si el tema es Pitágoras/geometría/álgebra, incluye números concretos.
+- Describe figuras en texto dentro del enunciado (no SVG ni dibujos).
 - "answer" breve para el docente (clave o resultado).
 - Gradúa dificultad si difficulty=graduada.
 - Alinea al CNEB cuando sea posible.
+- Prioriza reforzar los errores del diagnóstico previo.
 - teacherNotes: 1-2 frases de cómo usar el material.`;
 
-    const aiRes = await fetch("https://api.anthropic.com/v1/messages", {
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         "content-type": "application/json",
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
+        Authorization: "Bearer " + openaiKey,
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5",
+        model: "gpt-4o-mini",
+        temperature: 0.4,
         max_tokens: 3500,
-        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content: "Eres Alis. Respondes únicamente JSON válido con material pedagógico usable en clase.",
+          },
+          { role: "user", content: prompt },
+        ],
       }),
     });
 
     const aiJson = await aiRes.json();
     if (!aiRes.ok) {
-      console.error("Anthropic error", aiJson);
-      return json({ error: "Anthropic: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
+      console.error("OpenAI error", aiJson);
+      return json({ error: "OpenAI: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
     }
 
-    const text = (aiJson.content || []).filter((c) => c.type === "text").map((c) => c.text).join("\n");
+    const text = extractOpenAIText(aiJson);
     let material;
     try {
       const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();

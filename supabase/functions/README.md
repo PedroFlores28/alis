@@ -1,24 +1,21 @@
 # Edge Functions ALIS
 
-Secret requerido (ya en el proyecto): `ANTHROPIC_API_KEY`
+Secret único requerido: `OPENAI_API_KEY`
 
 ## Funciones
 
-| Nombre | Para qué |
-|---|---|
-| `analyze-evidence` | Lee foto/PDF y analiza con Haiku |
-| `generate-material` | Genera ejercicios de refuerzo con Haiku |
+| Nombre | Para qué | Modelo |
+|---|---|---|
+| `analyze-evidence` | Lee foto/PDF y analiza (describe figuras en texto) | GPT-4o-mini |
+| `generate-material` | Genera ejercicios de refuerzo | GPT-4o-mini |
 
 ## Desplegar (dashboard)
 
-Para **cada** función:
-
-1. Edge Functions → **Functions** → Via Editor / Deploy  
-2. Nombre exacto: `analyze-evidence` o `generate-material`  
-3. Pega el código de:
-   - `supabase/functions/analyze-evidence/index.ts`
-   - `supabase/functions/generate-material/index.ts`
-4. **Deploy**
+1. Edge Functions → Secrets → agrega `OPENAI_API_KEY`
+2. Para cada función (`analyze-evidence` y `generate-material`):
+   - Abre / crea la función
+   - Pega el código de `supabase/functions/<nombre>/index.ts`
+   - Deploy
 
 ## URLs
 

@@ -23,7 +23,8 @@ function ProfileTopbar({ student, onBack, onUpload, onGenerate, onEdit }) {
 }
 
 function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditHistory }) {
-  const s = STATUS[student.status];
+  const [openHistory, setOpenHistory] = React.useState(null);
+  const s = STATUS[student.status] || STATUS.normal;
   return (
     <div className="view">
       <ProfileTopbar student={student} onBack={onBack} onUpload={onUpload} onGenerate={onGenerate} onEdit={onEdit} />
@@ -94,24 +95,72 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
               {(student.history || []).length ? student.history.map((h, i) => {
                 const st = h.score == null ? "normal" : h.score >= 75 ? "destacado" : h.score >= 60 ? "normal" : h.score >= 50 ? "atencion" : "riesgo";
                 const entryKey = typeof historyEntryKey === "function" ? historyEntryKey(h, i) : (h.id || i);
+                const isOpen = openHistory === entryKey;
+                const hasContent = !!(h.graphicDescription || h.exerciseGoal || h.studentDiagnosis?.summary || h.summary || (h.obs || []).length);
                 return (
-                  <div className="hrow" key={entryKey}>
-                    <span className="hrow-icon"><Icon name="file" size={17} /></span>
-                    <span className="hrow-main">
-                      <span className="hrow-label">{h.label}</span>
-                      <span className="hrow-meta">{h.type}{h.fileName ? ` · ${h.fileName}` : ""} · {h.date}</span>
-                    </span>
-                    <span className="hrow-score" style={{ color: STATUS[st].dot }}>
-                      {h.score == null ? "—" : h.score + "%"}
-                    </span>
-                    <button
-                      type="button"
-                      className="hrow-edit"
-                      title="Editar resultado"
-                      onClick={() => onEditHistory?.(student, h, entryKey)}
-                    >
-                      <Icon name="pencil" size={15} />
-                    </button>
+                  <div className={"hrow-wrap" + (isOpen ? " is-open" : "")} key={entryKey}>
+                    <div className="hrow">
+                      <button
+                        type="button"
+                        className="hrow-toggle"
+                        onClick={() => setOpenHistory(isOpen ? null : entryKey)}
+                        title={isOpen ? "Ocultar detalle" : "Ver detalle en texto"}
+                      >
+                        <Icon name={isOpen ? "chevronDown" : "chevron"} size={16} />
+                      </button>
+                      <span className="hrow-icon"><Icon name="file" size={17} /></span>
+                      <button
+                        type="button"
+                        className="hrow-main hrow-main--btn"
+                        onClick={() => setOpenHistory(isOpen ? null : entryKey)}
+                      >
+                        <span className="hrow-label">{h.label}</span>
+                        <span className="hrow-meta">{h.type}{h.fileName ? ` · ${h.fileName}` : ""} · {h.date}</span>
+                      </button>
+                      <span className="hrow-score" style={{ color: (STATUS[st] || STATUS.normal).dot }}>
+                        {h.score == null ? "—" : h.score + "%"}
+                      </span>
+                      <button
+                        type="button"
+                        className="hrow-edit"
+                        title="Editar resultado"
+                        onClick={() => onEditHistory?.(student, h, entryKey)}
+                      >
+                        <Icon name="pencil" size={15} />
+                      </button>
+                    </div>
+                    {isOpen && (
+                      <div className="hrow-detail">
+                        {hasContent ? (
+                          <>
+                            <div className="hrow-detail-block">
+                              <strong>1. Figura / material visto</strong>
+                              <p>{h.graphicDescription || "Sin descripción guardada."}</p>
+                              {(h.graphicElements || []).length > 0 && (
+                                <ul>{h.graphicElements.map((el, idx) => <li key={idx}>{el}</li>)}</ul>
+                              )}
+                            </div>
+                            <div className="hrow-detail-block">
+                              <strong>2. Objetivo del ejercicio</strong>
+                              <p>{h.exerciseGoal || "Sin objetivo guardado."}</p>
+                            </div>
+                            <div className="hrow-detail-block">
+                              <strong>3. Diagnóstico del alumno</strong>
+                              <p>{h.studentDiagnosis?.summary || h.summary || "Sin diagnóstico guardado."}</p>
+                              {(h.studentDiagnosis?.strengths || []).map((t, idx) => (
+                                <p key={"ok-" + idx} className="hrow-ok">✓ {t}</p>
+                              ))}
+                              {(h.studentDiagnosis?.errors || []).map((t, idx) => (
+                                <p key={"err-" + idx} className="hrow-err">! {t}</p>
+                              ))}
+                            </div>
+                            {h.next ? <p className="hrow-next">Siguiente: {h.next}</p> : null}
+                          </>
+                        ) : (
+                          <p className="hrow-empty-detail">Este resultado aún no tiene contenido textual. Los nuevos análisis sí lo guardarán.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               }) : (

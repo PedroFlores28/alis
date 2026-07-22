@@ -1,4 +1,4 @@
-// evidence.js — subida + análisis IA (Claude vía Edge Function)
+// evidence.js — subida + análisis IA (GPT Mini vía Edge Function)
 
 function isUuid(v) {
   return typeof v === "string" &&
@@ -62,7 +62,7 @@ async function callAnalyzeEvidence(payload) {
 }
 
 /**
- * Sube evidencia y la analiza con Claude (Edge Function).
+ * Sube evidencia y la analiza con GPT Mini (Edge Function).
  */
 async function uploadEvidence({ teacherId, student, file }) {
   if (!student?.id) throw new Error("Selecciona un alumno.");
@@ -161,6 +161,13 @@ async function uploadEvidence({ teacherId, student, file }) {
     type: "Evidencia",
     status: analysis?.status || null,
     fileName: file.name,
+    graphicDescription: analysis?.graphicDescription || "",
+    graphicElements: analysis?.graphicElements || [],
+    exerciseGoal: analysis?.exerciseGoal || "",
+    studentDiagnosis: analysis?.studentDiagnosis || null,
+    summary: analysis?.summary || "",
+    obs: analysis?.obs || [],
+    next: analysis?.next || "",
   });
 
   if (typeof applyAnalysisToStudent === "function") {
@@ -273,11 +280,40 @@ async function updateStudentHistoryEntry(studentId, teacherId, entryKey, patch) 
   }
 
   const prev = history[idx] || {};
+  const nextDiagnosis = patch.studentDiagnosis && typeof patch.studentDiagnosis === "object"
+    ? {
+        strengths: Array.isArray(patch.studentDiagnosis.strengths)
+          ? patch.studentDiagnosis.strengths
+          : (prev.studentDiagnosis?.strengths || []),
+        errors: Array.isArray(patch.studentDiagnosis.errors)
+          ? patch.studentDiagnosis.errors
+          : (prev.studentDiagnosis?.errors || []),
+        summary: String(
+          patch.studentDiagnosis.summary != null
+            ? patch.studentDiagnosis.summary
+            : (prev.studentDiagnosis?.summary || "")
+        ).trim(),
+      }
+    : (prev.studentDiagnosis || null);
+
   history[idx] = {
     ...prev,
     id: prev.id || ("h-" + Date.now() + "-" + idx),
     label,
     score,
+    graphicDescription: patch.graphicDescription != null
+      ? String(patch.graphicDescription).trim()
+      : (prev.graphicDescription || ""),
+    exerciseGoal: patch.exerciseGoal != null
+      ? String(patch.exerciseGoal).trim()
+      : (prev.exerciseGoal || ""),
+    summary: patch.summary != null
+      ? String(patch.summary).trim()
+      : (prev.summary || ""),
+    next: patch.next != null
+      ? String(patch.next).trim()
+      : (prev.next || ""),
+    studentDiagnosis: nextDiagnosis,
   };
 
   return persistStudentHistory(studentId, teacherId, history, current.sessions || history.length);
