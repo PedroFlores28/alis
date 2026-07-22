@@ -65,6 +65,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
   const [file, setFile] = useState(null);
   const [stage, setStage] = useState("form"); // form | uploading | done
   const [analysis, setAnalysis] = useState(null);
+  const [pathOutcome, setPathOutcome] = useState(null);
   const [error, setError] = useState("");
   const fileRef = React.useRef(null);
   const student = byId(studentId) || students.find((s) => s.id === studentId);
@@ -87,6 +88,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
     try {
       const result = await uploadEvidence({ teacherId, student, file });
       setAnalysis(result.analysis);
+      setPathOutcome(result.pathOutcome || null);
       setStage("done");
       onUploaded?.(result);
     } catch (err) {
@@ -203,6 +205,12 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
             </div>
 
             <div className="result-next"><span>Siguiente: {analysis.next}</span></div>
+            {pathOutcome?.message && (
+              <div className={"result-path" + (pathOutcome.passed ? " is-pass" : " is-retake")}>
+                <strong>{pathOutcome.passed ? "Ruta: avanzó / aprobó" : "Ruta: retoma"}</strong>
+                <span>{pathOutcome.message}</span>
+              </div>
+            )}
           </div>
         )}
       </div>

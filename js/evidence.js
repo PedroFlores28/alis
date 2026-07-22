@@ -153,6 +153,13 @@ async function uploadEvidence({ teacherId, student, file }) {
 
   const score = analysis?.score;
   const topic = analysis?.topicTitle || file.name;
+
+  let pathOutcome = null;
+  if (typeof applyLearningPathFromAnalysis === "function") {
+    const pathResult = await applyLearningPathFromAnalysis(student.id, teacherId, analysis);
+    pathOutcome = pathResult?.outcome || null;
+  }
+
   await appendStudentHistory(student.id, teacherId, {
     id: "h-" + Date.now(),
     label: topic,
@@ -168,13 +175,13 @@ async function uploadEvidence({ teacherId, student, file }) {
     summary: analysis?.summary || "",
     obs: analysis?.obs || [],
     next: analysis?.next || "",
+    pathSessionTitle: pathOutcome?.sessionTitle || null,
+    pathResult: pathOutcome?.passed ? (pathOutcome.advanced || pathOutcome.completed ? "aprobada" : "aprobada") : (pathOutcome ? "retoma" : null),
+    pathMessage: pathOutcome?.message || null,
   });
 
   if (typeof applyAnalysisToStudent === "function") {
     applyAnalysisToStudent(student.id, teacherId, analysis);
-  }
-  if (typeof applyLearningPathFromAnalysis === "function") {
-    await applyLearningPathFromAnalysis(student.id, teacherId, analysis);
   }
   if (typeof createSuggestionFromAnalysis === "function") {
     await createSuggestionFromAnalysis(teacherId, student, analysis);
@@ -196,10 +203,10 @@ async function uploadEvidence({ teacherId, student, file }) {
       createdAt: new Date().toISOString(),
     };
     appendLocalEvidence(teacherId, localItem);
-    return { evidence: localItem, analysis, source: "local" };
+    return { evidence: localItem, analysis, pathOutcome, source: "local" };
   }
 
-  return { evidence: { ...evidenceRow, analysis, status: "analyzed" }, analysis, source: "supabase" };
+  return { evidence: { ...evidenceRow, analysis, status: "analyzed" }, analysis, pathOutcome, source: "supabase" };
 }
 
 async function appendStudentHistory(studentId, teacherId, entry) {

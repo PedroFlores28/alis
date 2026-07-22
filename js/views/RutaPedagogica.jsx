@@ -17,14 +17,20 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
     ? learningPathForStudent(student)
     : null;
   const sessions = path?.sessions || [];
+  const passScore = path?.passScore || (typeof LEARNING_PATH_PASS_SCORE === "number" ? LEARNING_PATH_PASS_SCORE : 70);
+  const currentSession = sessions.find((s) => s.status === "current");
+  const doneCount = sessions.filter((s) => s.status === "done").length;
 
   const kindLabel = (kind) =>
     kind === "diagnostico" ? "Diagnóstico" :
     kind === "meta" ? "Meta" : "Puente";
 
-  const statusLabel = (status) =>
-    status === "done" ? "Hecha" :
-    status === "current" ? "En curso" : "Pendiente";
+  const statusLabel = (s) => {
+    if (s.status === "done") return "Aprobada";
+    if (s.status === "current" && s.lastResult === "retoma") return "Retoma";
+    if (s.status === "current") return "En curso";
+    return "Pendiente";
+  };
 
   return (
     <div className="view">
@@ -35,8 +41,15 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
           </button>
         </div>
         <div className="topbar-r">
-          <button className="btn btn--primary" onClick={() => onGenerate(student)}>
-            <Icon name="sparkles" size={18} /> Generar material
+          <button
+            className="btn btn--primary"
+            onClick={() => onGenerate(student, currentSession ? {
+              topicTitle: currentSession.title,
+              next: currentSession.why,
+              summary: `Sesión ${currentSession.order}: ${currentSession.title}. ${currentSession.why}`,
+            } : null)}
+          >
+            <Icon name="sparkles" size={18} /> Generar práctica actual
           </button>
         </div>
       </header>
@@ -57,10 +70,29 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
           </div>
         </section>
 
+        <section className="ruta-progress-banner">
+          <div>
+            <p className="settings-eyebrow">Control de avance</p>
+            <strong>
+              {currentSession
+                ? `Sesión en curso: ${currentSession.title}`
+                : (doneCount === sessions.length && sessions.length ? "Ruta completada" : "Sin sesión activa")}
+            </strong>
+            <p>
+              Nota mínima para avanzar: {passScore}. Sube una evidencia de la práctica actual para aprobar o retomar.
+            </p>
+          </div>
+          <div className="ruta-progress-stats">
+            <span>{doneCount}/{sessions.length || 0} hechas</span>
+            {currentSession?.attempts ? <span>{currentSession.attempts} intento(s)</span> : null}
+            {currentSession?.lastScore != null ? <span>Última nota: {currentSession.lastScore}%</span> : null}
+          </div>
+        </section>
+
         <section className="ruta-flow">
           <div className="ruta-node">
             <span className="ruta-node-label">Nivel actual</span>
-            <p className="ruta-node-title">{student.focus || "Por definir"}</p>
+            <p className="ruta-node-title">{currentSession?.title || student.focus || "Por definir"}</p>
             <p className="ruta-node-text">{student.note}</p>
             <span className="ruta-node-pct">{student.progress}%</span>
           </div>
@@ -86,13 +118,13 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
             </div>
             {path?.estimate ? (
               <span className="panel-sub-inline">
-                ~{path.estimate} {path.estimate === 1 ? "sesión" : "sesiones"} hacia la meta
+                ~{path.estimate} {path.estimate === 1 ? "sesión" : "sesiones"} · mínimo {passScore}
               </span>
             ) : null}
           </div>
 
           <p className="ruta-timeline-lead">
-            Del más básico al objetivo. Si la evidencia muestra huecos previos, primero se recuperan esas bases.
+            Del más básico al objetivo. Cada evidencia subida aprueba (≥{passScore}) o retoma la sesión en curso.
           </p>
 
           <div className="ruta-timeline">
@@ -103,6 +135,7 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
                   "ruta-step" +
                   (s.status === "done" ? " is-done" : "") +
                   (s.status === "current" ? " is-current" : "") +
+                  (s.lastResult === "retoma" && s.status === "current" ? " is-retake" : "") +
                   (s.kind === "meta" ? " is-meta" : "")
                 }
               >
@@ -113,21 +146,29 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
                 <div className="ruta-step-card">
                   <div className="ruta-step-top">
                     <span className="ruta-step-kind">{kindLabel(s.kind)}</span>
-                    <span className="ruta-step-status">{statusLabel(s.status)}</span>
+                    <span className="ruta-step-status">{statusLabel(s)}</span>
                   </div>
                   <p className="ruta-step-title">{s.title}</p>
                   <p className="ruta-step-why">{s.why}</p>
-                  {s.kind !== "diagnostico" ? (
+                  {(s.attempts > 0 || s.lastScore != null) && (
+                    <p className="ruta-step-meta">
+                      {s.attempts ? `${s.attempts} intento(s)` : "Sin intentos"}
+                      {s.lastScore != null ? ` · última nota ${s.lastScore}%` : ""}
+                      {s.lastResult === "retoma" ? " · necesita retoma" : ""}
+                      {s.lastResult === "aprobada" && s.status === "done" ? " · aprobada" : ""}
+                    </p>
+                  )}
+                  {s.status === "current" ? (
                     <div className="ruta-step-actions">
                       <button
                         className="btn btn--primary btn--sm"
                         onClick={() => onGenerate(student, {
                           topicTitle: s.title,
                           next: s.why,
-                          summary: `Sesión ${s.order}: ${s.title}. ${s.why}`,
+                          summary: `Sesión ${s.order}: ${s.title}. ${s.why}${s.lastResult === "retoma" ? " Retoma del mismo nivel, no idéntica." : ""}`,
                         })}
                       >
-                        Generar práctica <Icon name="arrowUpRight" size={15} />
+                        {s.lastResult === "retoma" ? "Generar retoma" : "Generar práctica"} <Icon name="arrowUpRight" size={15} />
                       </button>
                     </div>
                   ) : null}

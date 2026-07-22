@@ -1,4 +1,6 @@
-// ruta.js — línea de tiempo de sesiones (fácil → objetivo)
+// ruta.js — línea de tiempo de sesiones (fácil → objetivo) + avance por evidencia
+
+const LEARNING_PATH_PASS_SCORE = 70;
 
 function normalizeLearningPath(raw, student, analysis, cneb) {
   const goal =
@@ -17,6 +19,10 @@ function normalizeLearningPath(raw, student, analysis, cneb) {
       why: String(s.why || s.reason || "").trim() || "Paso necesario hacia la meta.",
       kind: s.kind === "diagnostico" || s.kind === "meta" || s.kind === "puente" ? s.kind : (i === 0 ? "diagnostico" : "puente"),
       status: s.status === "done" || s.status === "current" || s.status === "pending" ? s.status : "pending",
+      attempts: Number(s.attempts) || 0,
+      lastScore: s.lastScore == null || s.lastScore === "" ? null : Number(s.lastScore),
+      lastResult: s.lastResult === "aprobada" || s.lastResult === "retoma" ? s.lastResult : null,
+      lastEvidenceAt: s.lastEvidenceAt || null,
     }))
     .sort((a, b) => a.order - b.order);
 
@@ -24,7 +30,6 @@ function normalizeLearningPath(raw, student, analysis, cneb) {
     return buildLearningPathFromAnalysis(student, analysis, cneb);
   }
 
-  // Asegurar orden pedagógico: diagnóstico → puentes → meta
   const hasMeta = sessions.some((s) => s.kind === "meta");
   if (!hasMeta) {
     sessions.push({
@@ -34,6 +39,10 @@ function normalizeLearningPath(raw, student, analysis, cneb) {
       why: "Meta de la evidencia o del objetivo curricular.",
       kind: "meta",
       status: "pending",
+      attempts: 0,
+      lastScore: null,
+      lastResult: null,
+      lastEvidenceAt: null,
     });
   } else {
     const meta = sessions.find((s) => s.kind === "meta");
@@ -41,7 +50,7 @@ function normalizeLearningPath(raw, student, analysis, cneb) {
   }
 
   sessions = sessions.map((s, i) => ({ ...s, order: i + 1 }));
-  if (!sessions.some((s) => s.status === "current")) {
+  if (!sessions.some((s) => s.status === "current") && !sessions.every((s) => s.status === "done")) {
     const firstPending = sessions.find((s) => s.status === "pending");
     if (firstPending) firstPending.status = "current";
     else if (sessions[0] && sessions[0].status !== "done") sessions[0].status = "current";
@@ -51,7 +60,9 @@ function normalizeLearningPath(raw, student, analysis, cneb) {
   return {
     goal,
     estimate: Math.max(sessions.length, estimate),
+    passScore: Number(raw?.passScore) || LEARNING_PATH_PASS_SCORE,
     generatedAt: raw?.generatedAt || new Date().toISOString(),
+    updatedAt: raw?.updatedAt || null,
     sessions,
   };
 }
@@ -64,6 +75,8 @@ function inferGaps(analysis, student) {
   const blob = [
     analysis?.summary,
     analysis?.next,
+    analysis?.exerciseGoal,
+    analysis?.studentDiagnosis?.summary,
     ...(analysis?.obs || []).map((o) => o?.t),
     student?.note,
   ]
@@ -93,7 +106,6 @@ function inferGaps(analysis, student) {
 
   if (found.length) return found;
 
-  // Puentes genéricos por área si no se detectan huecos explícitos
   const sid = student?.subjectId;
   if (sid === "mate") return ["Operaciones básicas del tema", "Aplicar el procedimiento paso a paso"];
   if (sid === "comunicacion" || sid === "castellano2") return ["Ordenar ideas (inicio–desarrollo–cierre)", "Usar conectores simples"];
@@ -116,9 +128,13 @@ function buildLearningPathFromAnalysis(student, analysis, cneb) {
       id: "rs-0",
       order: 1,
       title: "Diagnóstico: " + goal,
-      why: analysis?.summary || analysis?.next || student?.note || "Punto de partida según la evidencia subida.",
+      why: analysis?.summary || analysis?.studentDiagnosis?.summary || analysis?.next || student?.note || "Punto de partida según la evidencia subida.",
       kind: "diagnostico",
       status: "done",
+      attempts: 1,
+      lastScore: analysis?.score == null ? null : Number(analysis.score),
+      lastResult: "aprobada",
+      lastEvidenceAt: new Date().toISOString(),
     },
   ];
 
@@ -130,6 +146,10 @@ function buildLearningPathFromAnalysis(student, analysis, cneb) {
       why: `Base necesaria antes de abordar “${goal}”. Sin este paso, el alumno se atasca.`,
       kind: "puente",
       status: i === 0 ? "current" : "pending",
+      attempts: 0,
+      lastScore: null,
+      lastResult: null,
+      lastEvidenceAt: null,
     });
   });
 
@@ -142,13 +162,107 @@ function buildLearningPathFromAnalysis(student, analysis, cneb) {
       : "Meta de la evidencia: lo que se pedía en la tarea original.",
     kind: "meta",
     status: "pending",
+    attempts: 0,
+    lastScore: null,
+    lastResult: null,
+    lastEvidenceAt: null,
   });
 
   return {
     goal,
     estimate: sessions.length,
+    passScore: LEARNING_PATH_PASS_SCORE,
     generatedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
     sessions,
+  };
+}
+
+function didPassLearningSession(analysis, passScore) {
+  const threshold = Number(passScore) || LEARNING_PATH_PASS_SCORE;
+  if (analysis?.score != null && analysis.score !== "" && Number.isFinite(Number(analysis.score))) {
+    return Number(analysis.score) >= threshold;
+  }
+  return analysis?.status === "normal" || analysis?.status === "destacado";
+}
+
+function progressExistingLearningPath(path, analysis) {
+  const passScore = Number(path?.passScore) || LEARNING_PATH_PASS_SCORE;
+  const sessions = (path.sessions || []).map((s) => ({ ...s }));
+  let currentIdx = sessions.findIndex((s) => s.status === "current");
+
+  if (currentIdx < 0) {
+    currentIdx = sessions.findIndex((s) => s.status === "pending");
+    if (currentIdx >= 0) sessions[currentIdx].status = "current";
+  }
+
+  if (currentIdx < 0) {
+    return {
+      path: {
+        ...path,
+        sessions,
+        updatedAt: new Date().toISOString(),
+      },
+      outcome: {
+        passed: true,
+        advanced: false,
+        completed: true,
+        sessionTitle: null,
+        score: analysis?.score == null ? null : Number(analysis.score),
+        passScore,
+        message: "La ruta ya estaba completa.",
+      },
+    };
+  }
+
+  const passed = didPassLearningSession(analysis, passScore);
+  const score = analysis?.score == null || analysis?.score === "" ? null : Number(analysis.score);
+  const session = { ...sessions[currentIdx] };
+  session.attempts = (Number(session.attempts) || 0) + 1;
+  session.lastScore = Number.isFinite(score) ? score : session.lastScore;
+  session.lastResult = passed ? "aprobada" : "retoma";
+  session.lastEvidenceAt = new Date().toISOString();
+
+  let advanced = false;
+  if (passed) {
+    session.status = "done";
+    sessions[currentIdx] = session;
+    const nextIdx = sessions.findIndex((s, i) => i > currentIdx && s.status === "pending");
+    if (nextIdx >= 0) {
+      sessions[nextIdx] = { ...sessions[nextIdx], status: "current" };
+      advanced = true;
+    }
+  } else {
+    session.status = "current";
+    sessions[currentIdx] = session;
+  }
+
+  const completed = sessions.every((s) => s.status === "done");
+  const nextCurrent = sessions.find((s) => s.status === "current");
+
+  return {
+    path: {
+      ...path,
+      sessions,
+      passScore,
+      updatedAt: new Date().toISOString(),
+    },
+    outcome: {
+      passed,
+      advanced,
+      completed,
+      sessionId: session.id,
+      sessionTitle: session.title,
+      score: Number.isFinite(score) ? score : null,
+      passScore,
+      attempts: session.attempts,
+      nextTitle: nextCurrent?.title || null,
+      message: passed
+        ? (advanced
+          ? `Aprobó “${session.title}” (${score ?? "sin nota"}). Avanza a “${nextCurrent.title}”.`
+          : `Aprobó “${session.title}”. Completó la ruta.`)
+        : `Retoma “${session.title}”. Nota ${score ?? "sin estimar"} / mínimo ${passScore}. Genera otra práctica del mismo nivel.`,
+    },
   };
 }
 
@@ -172,12 +286,46 @@ async function saveStudentLearningPath(studentId, teacherId, learningPath) {
   return list.find((s) => s.id === studentId);
 }
 
-function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
+async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
   const current = (window.STUDENTS || []).find((s) => s.id === studentId);
-  if (!current) return null;
+  if (!current) return { student: null, outcome: null };
+
   const cneb = typeof cnebForStudent === "function" ? cnebForStudent(current) : null;
-  const path = normalizeLearningPath(analysis?.learningPath, current, analysis, cneb);
-  return saveStudentLearningPath(studentId, teacherId, path);
+  const existing = current.learningPath?.sessions?.length
+    ? normalizeLearningPath(current.learningPath, current, null, cneb)
+    : null;
+
+  const hasOpenSession = existing?.sessions?.some((s) => s.status === "current" || s.status === "pending");
+
+  let path;
+  let outcome;
+
+  if (existing && hasOpenSession) {
+    const progressed = progressExistingLearningPath(existing, analysis);
+    path = progressed.path;
+    outcome = progressed.outcome;
+  } else {
+    path = normalizeLearningPath(analysis?.learningPath, current, analysis, cneb);
+    const currentSession = path.sessions.find((s) => s.status === "current");
+    outcome = {
+      passed: true,
+      advanced: false,
+      completed: false,
+      sessionId: path.sessions[0]?.id || null,
+      sessionTitle: path.sessions[0]?.title || "Diagnóstico",
+      score: analysis?.score == null ? null : Number(analysis.score),
+      passScore: path.passScore || LEARNING_PATH_PASS_SCORE,
+      attempts: 1,
+      nextTitle: currentSession?.title || null,
+      message: currentSession
+        ? `Ruta creada. Siguiente sesión en curso: “${currentSession.title}” (mínimo ${path.passScore || LEARNING_PATH_PASS_SCORE}).`
+        : "Ruta creada.",
+      created: true,
+    };
+  }
+
+  const student = await saveStudentLearningPath(studentId, teacherId, path);
+  return { student, outcome, path };
 }
 
 function learningPathForStudent(student) {
@@ -194,9 +342,11 @@ function learningPathForStudent(student) {
 }
 
 Object.assign(window, {
+  LEARNING_PATH_PASS_SCORE,
   normalizeLearningPath,
   buildLearningPathFromAnalysis,
   applyLearningPathFromAnalysis,
+  progressExistingLearningPath,
   saveStudentLearningPath,
   learningPathForStudent,
 });
