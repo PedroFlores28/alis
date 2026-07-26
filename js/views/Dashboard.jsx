@@ -101,17 +101,34 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
         <KpiStrip students={students} />
         <div className="grid-2">
           <section className="panel">
-            <div className="panel-head">
-              <div className="panel-head-l"><h2 className="panel-title">Alumnos</h2><span className="panel-count">{students.length}</span></div>
-              <div className="panel-head-r">
-                <div className="seg">
-                  {[{ id: "todos", label: "Todos" }, { id: "riesgo", label: "Atención" }, { id: "destacado", label: "Destacados" }].map((f) => (
-                    <button key={f.id} className={"seg-btn" + (t.filter === f.id ? " is-on" : "")} onClick={() => t.setFilter(f.id)}>{f.label}</button>
-                  ))}
+            <div className="panel-head panel-head--stack">
+              <div className="panel-toolbar">
+                <div className="panel-head-l">
+                  <h2 className="panel-title">Alumnos</h2>
+                  <span className="panel-count">{students.length}</span>
                 </div>
-                <button className="btn btn--primary btn--sm" onClick={onAddStudent}>
-                  <Icon name="plus" size={15} /> Agregar
+                <button type="button" className="btn btn--primary btn--sm" onClick={onAddStudent}>
+                  <Icon name="plus" size={15} />
+                  <span className="btn-txt">Agregar</span>
                 </button>
+              </div>
+              <div className="seg seg--full" role="tablist" aria-label="Filtrar alumnos">
+                {[
+                  { id: "todos", label: "Todos" },
+                  { id: "riesgo", label: "Atención" },
+                  { id: "destacado", label: "Destacados" },
+                ].map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={t.filter === f.id}
+                    className={"seg-btn" + (t.filter === f.id ? " is-on" : "")}
+                    onClick={() => t.setFilter(f.id)}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
             </div>
             <div className={"scards scards--" + t.cardStyle}>
