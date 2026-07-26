@@ -1,17 +1,18 @@
 # Edge Functions ALIS
 
-Secret único requerido: `OPENAI_API_KEY`
+Secret único requerido: `GEMINI_API_KEY`  
+Modelo: `gemini-3.1-flash-lite` (Flash-Lite actual, económico)
 
 ## Funciones
 
 | Nombre | Para qué | Modelo |
 |---|---|---|
-| `analyze-evidence` | Lee foto/PDF y analiza (describe figuras en texto) | GPT-4o-mini |
-| `generate-material` | Genera ejercicios de refuerzo | GPT-4o-mini |
+| `analyze-evidence` | Lee foto/PDF y analiza (describe figuras en texto) | Gemini 3.1 Flash-Lite |
+| `generate-material` | Genera ejercicios de refuerzo | Gemini 3.1 Flash-Lite |
 
 ## Desplegar (dashboard)
 
-1. Edge Functions → Secrets → agrega `OPENAI_API_KEY`
+1. Edge Functions → Secrets → agrega `GEMINI_API_KEY`
 2. Para cada función (`analyze-evidence` y `generate-material`):
    - Abre / crea la función
    - Pega el código de `supabase/functions/<nombre>/index.ts`

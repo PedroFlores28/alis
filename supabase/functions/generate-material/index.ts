@@ -1,9 +1,12 @@
 // Supabase Edge Function: generate-material
-// Secret requerido: OPENAI_API_KEY
+// Secret requerido: GEMINI_API_KEY
+// Modelo: gemini-3.1-flash-lite (Flash-Lite actual, económico y disponible)
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const GEMINI_MODEL = "gemini-3.1-flash-lite";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -12,23 +15,18 @@ function json(data, status = 200) {
   });
 }
 
-function extractOpenAIText(aiJson) {
-  const content = aiJson?.choices?.[0]?.message?.content;
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => (typeof part === "string" ? part : part?.text || ""))
-      .join("\n");
-  }
-  return "";
+function extractGeminiText(aiJson) {
+  const parts = aiJson?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts.map((part) => part?.text || "").join("\n").trim();
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) return json({ error: "Falta OPENAI_API_KEY en Secrets" }, 500);
+    const geminiKey = String(Deno.env.get("GEMINI_API_KEY") || "").trim();
+    if (!geminiKey) return json({ error: "Falta GEMINI_API_KEY en Secrets" }, 500);
 
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "No autorizado" }, 401);
@@ -103,34 +101,37 @@ Reglas:
 - Prioriza reforzar los errores del diagnóstico previo.
 - teacherNotes: 1-2 frases de cómo usar el material.`;
 
-    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: "Bearer " + openaiKey,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.4,
-        max_tokens: 3500,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content: "Eres Alis. Respondes únicamente JSON válido con material pedagógico usable en clase.",
+    const aiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-goog-api-key": geminiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.4,
+            maxOutputTokens: 3500,
+            responseMimeType: "application/json",
           },
-          { role: "user", content: prompt },
-        ],
-      }),
-    });
+        }),
+      }
+    );
 
     const aiJson = await aiRes.json();
     if (!aiRes.ok) {
-      console.error("OpenAI error", aiJson);
-      return json({ error: "OpenAI: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
+      console.error("Gemini error", aiJson);
+      return json({ error: "Gemini: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
     }
 
-    const text = extractOpenAIText(aiJson);
+    const text = extractGeminiText(aiJson);
     let material;
     try {
       const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();

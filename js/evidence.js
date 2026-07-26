@@ -1,4 +1,4 @@
-// evidence.js — subida + análisis IA (GPT Mini vía Edge Function)
+// evidence.js — subida + análisis IA (Gemini Flash-Lite vía Edge Function)
 
 function isUuid(v) {
   return typeof v === "string" &&
@@ -62,7 +62,7 @@ async function callAnalyzeEvidence(payload) {
 }
 
 /**
- * Sube evidencia y la analiza con GPT Mini (Edge Function).
+ * Sube evidencia y la analiza con Gemini Flash-Lite (Edge Function).
  */
 async function uploadEvidence({ teacherId, student, file }) {
   if (!student?.id) throw new Error("Selecciona un alumno.");
@@ -171,6 +171,7 @@ async function uploadEvidence({ teacherId, student, file }) {
     graphicDescription: analysis?.graphicDescription || "",
     graphicElements: analysis?.graphicElements || [],
     exerciseGoal: analysis?.exerciseGoal || "",
+    documentMarkdown: analysis?.documentMarkdown || "",
     studentDiagnosis: analysis?.studentDiagnosis || null,
     summary: analysis?.summary || "",
     obs: analysis?.obs || [],

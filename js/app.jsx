@@ -209,6 +209,15 @@ function App({ teacher, onLogout }) {
         onLogout={onLogout}
       />
       <main className="main">{content}</main>
+      <BottomNav
+        route={route}
+        activeSubject={activeSubject}
+        onNavigate={navigate}
+        onSubject={changeSubject}
+        onRuta={openRutaPicker}
+        onUpload={openEvidencePicker}
+        onOpenProfile={() => setProfileConfigOpen(true)}
+      />
 
       {profileConfigOpen && (
         <ProfileConfigModal

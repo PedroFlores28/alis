@@ -1,11 +1,14 @@
 // Supabase Edge Function: analyze-evidence
-// Secret requerido: OPENAI_API_KEY
+// Secret requerido: GEMINI_API_KEY
+// Modelo: gemini-3.1-flash-lite (Flash-Lite actual, económico y disponible)
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const GEMINI_MODEL = "gemini-3.1-flash-lite";
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -23,23 +26,18 @@ function bytesToBase64(bytes) {
   return btoa(binary);
 }
 
-function extractOpenAIText(aiJson) {
-  const content = aiJson?.choices?.[0]?.message?.content;
-  if (typeof content === "string") return content;
-  if (Array.isArray(content)) {
-    return content
-      .map((part) => (typeof part === "string" ? part : part?.text || ""))
-      .join("\n");
-  }
-  return "";
+function extractGeminiText(aiJson) {
+  const parts = aiJson?.candidates?.[0]?.content?.parts;
+  if (!Array.isArray(parts)) return "";
+  return parts.map((part) => part?.text || "").join("\n").trim();
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
 
   try {
-    const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) return json({ error: "Falta OPENAI_API_KEY en Secrets" }, 500);
+    const geminiKey = String(Deno.env.get("GEMINI_API_KEY") || "").trim();
+    if (!geminiKey) return json({ error: "Falta GEMINI_API_KEY en Secrets" }, 500);
 
     const authHeader = req.headers.get("Authorization") || "";
     if (!authHeader.startsWith("Bearer ")) return json({ error: "No autorizado" }, 401);
@@ -76,7 +74,6 @@ Deno.serve(async (req) => {
 
     if (!b64) return json({ error: "No hay archivo para analizar" }, 400);
 
-    // Límite práctico para Edge (~4.5MB base64)
     if (b64.length > 6_000_000) {
       return json({ error: "Archivo demasiado grande para análisis. Usa una foto más liviana." }, 413);
     }
@@ -89,17 +86,18 @@ Deno.serve(async (req) => {
         : "image/jpeg";
 
     const prompt = `Eres Alis, asistente pedagógico para docentes en Perú (CNEB/MINEDU).
-Analiza la evidencia académica del alumno y responde SOLO JSON válido (sin markdown).
+Analiza la evidencia académica del alumno y responde SOLO JSON válido (sin markdown envolvente).
 
-IMPORTANTE sobre gráficos/figuras:
-- NO intentes redibujar, regenerar ni inventar SVG/Markdown de la figura.
-- Describe en texto preciso lo que ves (geometría, mapas conceptuales, viñetas, diagramas, tablas, etc.).
-- El docente debe entender a qué material hace referencia el alumno y dónde se equivocó, solo leyendo texto.
+PROCESO INTERNO (hazlo en este orden, pero responde solo en el JSON final):
+A) Analiza y escudriña la imagen minuciosamente de arriba a abajo en orden secuencial de lectura visual.
+B) Extrae todo el texto visible palabra por palabra respetando su orden y estructura espacial.
+C) Si encuentras gráfico, diagrama, tabla, esquema, figura o mapa, pausa en ese punto y descríbelo con detalle (tipo, ejes/etiquetas, datos, tendencias, contenido y significado visual). NO redibujes ni inventes SVG.
+D) Con esa lectura, diagnostica el desempeño del alumno.
 
-Estructura el análisis en 3 etapas:
-1) Reconocimiento y descripción del elemento gráfico / material visto.
-2) Identificación del objetivo pedagógico o pregunta del ejercicio.
-3) Diagnóstico paso a paso del desempeño del alumno (aciertos y errores).
+IMPORTANTE:
+- Un solo prompt general (sirve para cualquier área/curso).
+- El tutor verá un resumen claro; el campo documentMarkdown es la transcripción interna completa.
+- Sé honesto si la imagen es ilegible.
 
 Alumno: ${student.name}
 Grado: ${student.grade || ""}
@@ -113,6 +111,7 @@ Referencia CNEB:
 
 Devuelve este JSON exacto:
 {
+  "documentMarkdown": string,
   "score": number|null,
   "status": "riesgo"|"atencion"|"normal"|"destacado",
   "topicTitle": string,
@@ -146,9 +145,10 @@ Devuelve este JSON exacto:
   }
 }
 
-Reglas:
-- graphicDescription: párrafo claro de lo que aparece en la imagen (figura, etiquetas, datos visibles).
-- graphicElements: 2 a 8 elementos detectados (ej. "triángulo isósceles", "ángulo 14°", "personaje A").
+Reglas de campos:
+- documentMarkdown: Markdown limpio, estructurado y editable, de arriba hacia abajo, con el texto extraído y las descripciones de figuras insertadas donde aparecen. Compacto pero completo.
+- graphicDescription: resumen corto de la(s) figura(s) principal(es) para el tutor.
+- graphicElements: 2 a 8 elementos detectados (ej. "triángulo isósceles", "ángulo 14°").
 - exerciseGoal: qué pedía el ejercicio / objetivo pedagógico.
 - studentDiagnosis.strengths / errors: listas cortas y concretas.
 - studentDiagnosis.summary: síntesis del desempeño en 1-2 oraciones.
@@ -160,65 +160,44 @@ Reglas:
 - learningPath: línea de sesiones de lo MÁS FÁCIL / básico hacia la META.
   - Sesión 1 kind=diagnostico status=done (punto de partida de la evidencia).
   - Luego 1–3 kind=puente (prerequisitos; nunca saltes directo a la meta si hay huecos).
-  - Última kind=meta = el objetivo de la tarea o CNEB (lo más difícil de esta ruta).
+  - Última kind=meta = el objetivo de la tarea o CNEB.
   - Si el alumno no sabe sumar y la tarea era multiplicación: puentes de suma/resta ANTES de multiplicación.
-  - estimate = cantidad de sesiones de la ruta.
-- Sé honesto si la imagen es ilegible.`;
+  - estimate = cantidad de sesiones de la ruta.`;
 
-    const userContent = isPdf
-      ? [
-          {
-            type: "file",
-            file: {
-              filename: fileName || "evidencia.pdf",
-              file_data: `data:application/pdf;base64,${b64}`,
+    const aiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`,
+      {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-goog-api-key": geminiKey,
+        },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                { inline_data: { mime_type: safeMime, data: b64 } },
+                { text: prompt },
+              ],
             },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+            maxOutputTokens: 2800,
+            responseMimeType: "application/json",
           },
-          { type: "text", text: prompt },
-        ]
-      : [
-          {
-            type: "image_url",
-            image_url: {
-              url: `data:${safeMime};base64,${b64}`,
-              detail: "high",
-            },
-          },
-          { type: "text", text: prompt },
-        ];
-
-    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        Authorization: "Bearer " + openaiKey,
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        temperature: 0.2,
-        max_tokens: 2200,
-        response_format: { type: "json_object" },
-        messages: [
-          {
-            role: "system",
-            content:
-              "Eres Alis. Respondes únicamente JSON válido. Describes gráficos en texto preciso; nunca inventas SVG ni reconstrucciones visuales.",
-          },
-          {
-            role: "user",
-            content: userContent,
-          },
-        ],
-      }),
-    });
+        }),
+      }
+    );
 
     const aiJson = await aiRes.json();
     if (!aiRes.ok) {
-      console.error("OpenAI error", aiJson);
-      return json({ error: "OpenAI: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
+      console.error("Gemini error", aiJson);
+      return json({ error: "Gemini: " + (aiJson?.error?.message || aiRes.statusText) }, 502);
     }
 
-    const text = extractOpenAIText(aiJson);
+    const text = extractGeminiText(aiJson);
     let analysis;
     try {
       const clean = text.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
@@ -233,6 +212,7 @@ Reglas:
         graphicDescription: "No se pudo estructurar la descripción visual de la evidencia.",
         graphicElements: [],
         exerciseGoal: "Revisar manualmente el objetivo del ejercicio.",
+        documentMarkdown: text.slice(0, 2000),
         studentDiagnosis: {
           strengths: [],
           errors: ["No se pudo parsear la respuesta de la IA."],
@@ -247,8 +227,12 @@ Reglas:
 
     analysis.cnebCompetence = analysis.cnebCompetence || cneb?.competence || null;
     analysis.cnebPerformance = analysis.cnebPerformance || cneb?.performance || null;
+    analysis.documentMarkdown = String(analysis.documentMarkdown || "").trim();
     analysis.graphicDescription = String(analysis.graphicDescription || "").trim();
     analysis.exerciseGoal = String(analysis.exerciseGoal || "").trim();
+    if (!analysis.graphicDescription && analysis.documentMarkdown) {
+      analysis.graphicDescription = analysis.documentMarkdown.slice(0, 400);
+    }
     analysis.graphicElements = Array.isArray(analysis.graphicElements)
       ? analysis.graphicElements.map((x) => String(x).trim()).filter(Boolean)
       : [];

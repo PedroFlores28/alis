@@ -7,15 +7,15 @@ function ProfileTopbar({ student, onBack, onUpload, onGenerate, onEdit }) {
           <Icon name="arrowLeft" size={18} /> Alumnos
         </button>
       </div>
-      <div className="topbar-r">
+      <div className="topbar-r topbar-r--actions">
         <button className="btn btn--ghost" onClick={() => onEdit?.(student)}>
-          <Icon name="pencil" size={18} /> Editar
+          <Icon name="pencil" size={18} /> <span className="btn-txt">Editar</span>
         </button>
         <button className="btn btn--ghost" onClick={() => onUpload(student)}>
-          <Icon name="upload" size={18} /> Subir resultado
+          <Icon name="upload" size={18} /> <span className="btn-txt">Subir</span>
         </button>
         <button className="btn btn--primary" onClick={() => onGenerate(student)}>
-          <Icon name="sparkles" size={18} /> Generar material
+          <Icon name="sparkles" size={18} /> <span className="btn-txt">Generar</span>
         </button>
       </div>
     </header>
@@ -96,7 +96,7 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
                 const st = h.score == null ? "normal" : h.score >= 75 ? "destacado" : h.score >= 60 ? "normal" : h.score >= 50 ? "atencion" : "riesgo";
                 const entryKey = typeof historyEntryKey === "function" ? historyEntryKey(h, i) : (h.id || i);
                 const isOpen = openHistory === entryKey;
-                const hasContent = !!(h.graphicDescription || h.exerciseGoal || h.studentDiagnosis?.summary || h.summary || (h.obs || []).length);
+                const hasContent = !!(h.graphicDescription || h.exerciseGoal || h.studentDiagnosis?.summary || h.summary || h.documentMarkdown || (h.obs || []).length);
                 return (
                   <div className={"hrow-wrap" + (isOpen ? " is-open" : "")} key={entryKey}>
                     <div className="hrow">
@@ -154,6 +154,12 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
                                 <p key={"err-" + idx} className="hrow-err">! {t}</p>
                               ))}
                             </div>
+                            {h.documentMarkdown ? (
+                              <details className="hrow-doc">
+                                <summary>Texto extraído (interno)</summary>
+                                <pre>{h.documentMarkdown}</pre>
+                              </details>
+                            ) : null}
                             {h.next ? <p className="hrow-next">Siguiente: {h.next}</p> : null}
                           </>
                         ) : (

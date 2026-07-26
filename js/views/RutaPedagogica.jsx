@@ -40,7 +40,7 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
             <Icon name="arrowLeft" size={18} /> Alumnos
           </button>
         </div>
-        <div className="topbar-r">
+        <div className="topbar-r topbar-r--actions">
           <button
             className="btn btn--primary"
             onClick={() => onGenerate(student, currentSession ? {
@@ -49,7 +49,7 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
               summary: `Sesión ${currentSession.order}: ${currentSession.title}. ${currentSession.why}`,
             } : null)}
           >
-            <Icon name="sparkles" size={18} /> Generar práctica actual
+            <Icon name="sparkles" size={18} /> <span className="btn-txt">Generar práctica</span>
           </button>
         </div>
       </header>

@@ -149,7 +149,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 
             {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
             {stage === "uploading" && (
-              <div className="analyzing"><span className="spinner" />Subiendo y analizando con GPT Mini (Alis)…</div>
+              <div className="analyzing"><span className="spinner" />Subiendo y analizando con Gemini (Alis)…</div>
             )}
           </>
         )}
