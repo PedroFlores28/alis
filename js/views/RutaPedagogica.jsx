@@ -44,9 +44,10 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
           <button
             className="btn btn--primary"
             onClick={() => onGenerate(student, currentSession ? {
+              sessionId: currentSession.id,
               topicTitle: currentSession.title,
               next: currentSession.why,
-              summary: `Sesión ${currentSession.order}: ${currentSession.title}. ${currentSession.why}`,
+              summary: `Sesión ${currentSession.order}: ${currentSession.title}. ${currentSession.why}${currentSession.lastResult === "retoma" ? " Retoma del mismo nivel, no idéntica." : ""}`,
             } : null)}
           >
             <Icon name="sparkles" size={18} /> <span className="btn-txt">Generar práctica</span>
@@ -163,6 +164,7 @@ function RutaPedagogicaView({ student, onBack, onGenerate }) {
                       <button
                         className="btn btn--primary btn--sm"
                         onClick={() => onGenerate(student, {
+                          sessionId: s.id,
                           topicTitle: s.title,
                           next: s.why,
                           summary: `Sesión ${s.order}: ${s.title}. ${s.why}${s.lastResult === "retoma" ? " Retoma del mismo nivel, no idéntica." : ""}`,

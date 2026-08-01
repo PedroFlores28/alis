@@ -206,9 +206,17 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 
             <div className="result-next"><span>Siguiente: {analysis.next}</span></div>
             {pathOutcome?.message && (
-              <div className={"result-path" + (pathOutcome.passed ? " is-pass" : " is-retake")}>
-                <strong>{pathOutcome.passed ? "Ruta: avanzó / aprobó" : "Ruta: retoma"}</strong>
+              <div className={
+                "result-path" +
+                (pathOutcome.mismatched ? " is-mismatch" : (pathOutcome.passed ? " is-pass" : " is-retake"))
+              }>
+                <strong>
+                  {pathOutcome.mismatched
+                    ? "Ruta: no aplicada"
+                    : (pathOutcome.passed ? "Ruta: avanzó / aprobó" : "Ruta: retoma")}
+                </strong>
                 <span>{pathOutcome.message}</span>
+                {pathOutcome.matchReason ? <em>{pathOutcome.matchReason}</em> : null}
               </div>
             )}
           </div>
@@ -243,7 +251,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 }
 
 // ---------- Generate material ----------
-function GenerateModal({ preset, students, analysis, onClose }) {
+function GenerateModal({ preset, students, analysis, teacherId, sessionId, onClose, onPracticeSaved }) {
   const list = students || [];
   const [studentId, setStudentId] = useState(preset && preset.id ? preset.id : (list[0] && list[0].id));
   const [type, setType] = useState("practica");
@@ -280,6 +288,15 @@ function GenerateModal({ preset, students, analysis, onClose }) {
         count,
         analysis: analysis || null,
       });
+      mat.practiceCode = typeof makePracticeCode === "function" ? makePracticeCode() : ("ALIS-" + Date.now().toString(36).slice(-6).toUpperCase());
+      if (typeof recordExpectedPractice === "function" && teacherId && student?.id) {
+        await recordExpectedPractice(student.id, teacherId, mat, {
+          sessionId: sessionId || analysis?.sessionId || null,
+          type,
+          code: mat.practiceCode,
+        });
+        onPracticeSaved?.();
+      }
       setMaterial(mat);
       setStage("done");
     } catch (err) {
@@ -360,6 +377,9 @@ function GenerateModal({ preset, students, analysis, onClose }) {
               <div>
                 <p className="gen-result-title">{typeLabel} · {material?.topic || topicHint}</p>
                 <p className="gen-result-sub">{exercises.length} ejercicios · dificultad {difficulty} · {student.name}</p>
+                {material?.practiceCode ? (
+                  <p className="gen-result-sub"><strong>Código:</strong> {material.practiceCode} (debe verse en la foto al subir)</p>
+                ) : null}
               </div>
               <span className="minedu-tag"><Icon name="check" size={13} /> Alineado MINEDU</span>
             </div>

@@ -95,6 +95,10 @@ function downloadMaterialPdf(material, student) {
 
   write("ALIS — Material de refuerzo", 14, "bold");
   write(`${typeLabel} · ${material.topic || material.title || "Tema"}`, 12, "bold");
+  if (material.practiceCode) {
+    write(`Código de práctica: ${material.practiceCode}`, 12, "bold");
+    write("Este código debe verse en la foto al subir el resultado. Sin él, la ruta no avanza.", 9, "italic");
+  }
   write(
     `Alumno: ${student?.name || ""}  |  Área: ${student?.subject || ""}  |  Competencia: ${student?.competenceLabel || student?.competenceId || ""}`,
     10,

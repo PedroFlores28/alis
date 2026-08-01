@@ -124,6 +124,9 @@ async function uploadEvidence({ teacherId, student, file }) {
             performance: cneb.performance,
           }
         : null,
+      expectedPractice: typeof expectedPracticeForStudent === "function"
+        ? expectedPracticeForStudent(student)
+        : null,
     };
 
     // Si no hay path en Storage, mandamos base64 (fotos pequeñas)
@@ -177,8 +180,11 @@ async function uploadEvidence({ teacherId, student, file }) {
     obs: analysis?.obs || [],
     next: analysis?.next || "",
     pathSessionTitle: pathOutcome?.sessionTitle || null,
-    pathResult: pathOutcome?.passed ? (pathOutcome.advanced || pathOutcome.completed ? "aprobada" : "aprobada") : (pathOutcome ? "retoma" : null),
+    pathResult: pathOutcome?.mismatched
+      ? "no_aplica"
+      : (pathOutcome?.passed ? "aprobada" : (pathOutcome ? "retoma" : null)),
     pathMessage: pathOutcome?.message || null,
+    pathMatch: pathOutcome?.match || analysis?.pathMatch || null,
   });
 
   if (typeof applyAnalysisToStudent === "function") {

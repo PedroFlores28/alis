@@ -91,6 +91,7 @@ function App({ teacher, onLogout }) {
     type: "generate",
     student: (s && s.id) ? s : null,
     analysis: analysisHint || null,
+    sessionId: analysisHint?.sessionId || null,
   });
   const openAddStudent = () => setModal({ type: "student-form", student: null });
   const openEditStudent = (s) => setModal({ type: "student-form", student: s });
@@ -255,7 +256,10 @@ function App({ teacher, onLogout }) {
           preset={modal.student}
           students={modalStudents}
           analysis={modal.analysis || null}
+          teacherId={teacherId}
+          sessionId={modal.sessionId || null}
           onClose={() => setModal(null)}
+          onPracticeSaved={() => pullFromWindow()}
         />
       )}
       {modal && modal.type === "student-form" && (

@@ -51,6 +51,7 @@ Deno.serve(async (req) => {
       fileName,
       student,
       cneb,
+      expectedPractice,
     } = body || {};
 
     if (!student?.name) return json({ error: "Falta datos del alumno" }, 400);
@@ -85,6 +86,27 @@ Deno.serve(async (req) => {
         ? "application/pdf"
         : "image/jpeg";
 
+    const expectedBlock = expectedPractice && (expectedPractice.title || expectedPractice.topic || expectedPractice.code)
+      ? `
+Práctica ALIS esperada (CRÍTICO — anti-engaño):
+- Código de práctica (obligatorio en la hoja): ${expectedPractice.code || "no asignado"}
+- Sesión: ${expectedPractice.sessionTitle || expectedPractice.title || ""}
+- Tema: ${expectedPractice.topic || expectedPractice.title || ""}
+- Por qué: ${expectedPractice.why || ""}
+- Tipo material ALIS: ${expectedPractice.type || "no indicado"}
+- Ejercicios de referencia: ${(Array.isArray(expectedPractice.samplePrompts) ? expectedPractice.samplePrompts : []).slice(0, 6).map((p, i) => `${i + 1}. ${p}`).join(" | ") || "—"}
+
+Reglas de verificación:
+1) Busca el código exacto (${expectedPractice.code || "ALIS-XXXX"}) en la imagen/PDF.
+2) practiceCodeFound=true solo si lo ves claramente; practiceCodeSeen = el texto del código leído.
+3) pathMatch="yes" SOLO si el código está presente Y el contenido corresponde a esa práctica.
+4) Si el código no aparece → pathMatch="no" (aunque el tema se parezca).
+5) Si es otra hoja/tarea → pathMatch="no".
+`
+      : `
+No hay práctica ALIS generada pendiente. pathMatch="yes", practiceCodeFound=false, practiceCodeSeen="".
+`;
+
     const prompt = `Eres Alis, asistente pedagógico para docentes en Perú (CNEB/MINEDU).
 Analiza la evidencia académica del alumno y responde SOLO JSON válido (sin markdown envolvente).
 
@@ -92,12 +114,14 @@ PROCESO INTERNO (hazlo en este orden, pero responde solo en el JSON final):
 A) Analiza y escudriña la imagen minuciosamente de arriba a abajo en orden secuencial de lectura visual.
 B) Extrae todo el texto visible palabra por palabra respetando su orden y estructura espacial.
 C) Si encuentras gráfico, diagrama, tabla, esquema, figura o mapa, pausa en ese punto y descríbelo con detalle (tipo, ejes/etiquetas, datos, tendencias, contenido y significado visual). NO redibujes ni inventes SVG.
-D) Con esa lectura, diagnostica el desempeño del alumno.
+D) Busca el código de práctica ALIS-XXXX si se indicó uno esperado.
+E) Diagnostica el desempeño del alumno y decide pathMatch.
 
 IMPORTANTE:
 - Un solo prompt general (sirve para cualquier área/curso).
 - El tutor verá un resumen claro; el campo documentMarkdown es la transcripción interna completa.
 - Sé honesto si la imagen es ilegible.
+- Sin el código de práctica esperado, pathMatch debe ser "no".
 
 Alumno: ${student.name}
 Grado: ${student.grade || ""}
@@ -108,7 +132,7 @@ Referencia CNEB:
 - Competencia: ${cneb?.competence || "no disponible"}
 - Capacidad: ${cneb?.capacity || "no disponible"}
 - Desempeño esperado: ${cneb?.performance || "no disponible"}
-
+${expectedBlock}
 Devuelve este JSON exacto:
 {
   "documentMarkdown": string,
@@ -120,6 +144,10 @@ Devuelve este JSON exacto:
   "graphicDescription": string,
   "graphicElements": [string],
   "exerciseGoal": string,
+  "pathMatch": "yes"|"no"|"unsure",
+  "pathMatchReason": string,
+  "practiceCodeFound": boolean,
+  "practiceCodeSeen": string,
   "studentDiagnosis": {
     "strengths": [string],
     "errors": [string],
@@ -146,6 +174,8 @@ Devuelve este JSON exacto:
 }
 
 Reglas de campos:
+- practiceCodeFound / practiceCodeSeen: si aparece el código ALIS de la práctica esperada.
+- pathMatch / pathMatchReason: cruce estricto con la práctica ALIS (código + contenido).
 - documentMarkdown: Markdown limpio, estructurado y editable, de arriba hacia abajo, con el texto extraído y las descripciones de figuras insertadas donde aparecen. Compacto pero completo.
 - graphicDescription: resumen corto de la(s) figura(s) principal(es) para el tutor.
 - graphicElements: 2 a 8 elementos detectados (ej. "triángulo isósceles", "ángulo 14°").
@@ -230,6 +260,17 @@ Reglas de campos:
     analysis.documentMarkdown = String(analysis.documentMarkdown || "").trim();
     analysis.graphicDescription = String(analysis.graphicDescription || "").trim();
     analysis.exerciseGoal = String(analysis.exerciseGoal || "").trim();
+    const rawMatch = String(analysis.pathMatch || "").toLowerCase().trim();
+    analysis.pathMatch = rawMatch === "yes" || rawMatch === "si" || rawMatch === "sí"
+      ? "yes"
+      : rawMatch === "no"
+        ? "no"
+        : rawMatch === "unsure" || rawMatch === "dudoso" || rawMatch === "parcial"
+          ? "unsure"
+          : (expectedPractice ? "unsure" : "yes");
+    analysis.pathMatchReason = String(analysis.pathMatchReason || "").trim();
+    analysis.practiceCodeFound = analysis.practiceCodeFound === true;
+    analysis.practiceCodeSeen = String(analysis.practiceCodeSeen || "").trim();
     if (!analysis.graphicDescription && analysis.documentMarkdown) {
       analysis.graphicDescription = analysis.documentMarkdown.slice(0, 400);
     }
