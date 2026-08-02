@@ -5,15 +5,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-alis-client",
+  "Access-Control-Expose-Headers": "x-alis-analyze-version",
 };
 
 const GEMINI_MODEL = "gemini-3.1-flash-lite";
+const ANALYZE_VERSION = "2026-08-01-code";
 
 function json(data, status = 200) {
-  return new Response(JSON.stringify(data), {
+  const body = data && typeof data === "object" && !Array.isArray(data)
+    ? { ...data, alisAnalyzeVersion: data.alisAnalyzeVersion || ANALYZE_VERSION }
+    : data;
+  return new Response(JSON.stringify(body), {
     status,
-    headers: { ...cors, "Content-Type": "application/json" },
+    headers: {
+      ...cors,
+      "Content-Type": "application/json",
+      "x-alis-analyze-version": ANALYZE_VERSION,
+    },
   });
 }
 

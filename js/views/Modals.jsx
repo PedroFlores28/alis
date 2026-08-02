@@ -61,11 +61,16 @@ function PickStudentModal({ title, sub, icon, students, onPick, onClose }) {
 
 // ---------- Upload result ----------
 function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGenerateReinforcement }) {
+  const locked = !!(preset && preset.id);
   const [studentId, setStudentId] = useState(preset ? preset.id : (students[0] && students[0].id));
   const [file, setFile] = useState(null);
+  const [confirmed, setConfirmed] = useState(locked);
   const [stage, setStage] = useState("form"); // form | uploading | done
   const [analysis, setAnalysis] = useState(null);
   const [pathOutcome, setPathOutcome] = useState(null);
+  const [manualCode, setManualCode] = useState("");
+  const [applyingCode, setApplyingCode] = useState(false);
+  const [historyId, setHistoryId] = useState(null);
   const [error, setError] = useState("");
   const fileRef = React.useRef(null);
   const student = byId(studentId) || students.find((s) => s.id === studentId);
@@ -83,17 +88,60 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 
   const analyze = async () => {
     if (!file || !student) return;
+    if (!confirmed) {
+      setError("Confirma que el resultado es de " + student.name.split(" ")[0] + ".");
+      return;
+    }
     setError("");
     setStage("uploading");
     try {
       const result = await uploadEvidence({ teacherId, student, file });
       setAnalysis(result.analysis);
       setPathOutcome(result.pathOutcome || null);
+      setHistoryId(result.historyId || null);
       setStage("done");
       onUploaded?.(result);
     } catch (err) {
       setError(err.message || "No se pudo subir la evidencia.");
       setStage("form");
+    }
+  };
+
+  const applyManualCode = async () => {
+    if (!analysis || !student || typeof applyLearningPathFromAnalysis !== "function") return;
+    if (analysis.aiFailed) {
+      setError("No se puede validar el código sin un análisis real de la IA.");
+      return;
+    }
+    const code = String(manualCode || "").trim().toUpperCase();
+    if (!/^ALIS-[A-Z0-9]{4,}$/i.test(code)) {
+      setError("Escribe un código válido, ej. ALIS-K7P2M4.");
+      return;
+    }
+    setApplyingCode(true);
+    setError("");
+    try {
+      const pathResult = await applyLearningPathFromAnalysis(student.id, teacherId, analysis, {
+        manualPracticeCode: code,
+      });
+      const outcome = pathResult?.outcome || null;
+      setPathOutcome(outcome);
+      if (outcome && !outcome.mismatched && typeof patchHistoryPathFields === "function") {
+        await patchHistoryPathFields(student.id, teacherId, historyId, {
+          pathSessionTitle: outcome.sessionTitle || null,
+          pathResult: outcome.passed ? "aprobada" : "retoma",
+          pathMessage: outcome.message || null,
+          pathMatch: outcome.match || "yes",
+        });
+      }
+      onUploaded?.({ analysis, pathOutcome: outcome });
+      if (outcome?.mismatched) {
+        setError(outcome.message || "Código no válido para esta sesión.");
+      }
+    } catch (err) {
+      setError(err.message || "No se pudo validar el código.");
+    } finally {
+      setApplyingCode(false);
     }
   };
 
@@ -112,7 +160,22 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
         {stage !== "done" && (
           <>
             <label className="field-label">Alumno · {student.subject}</label>
-            <StudentPicker value={studentId} onChange={(id) => { setStudentId(id); setFile(null); }} students={students} />
+            {locked ? (
+              <div className="picker">
+                <div className="picker-opt is-on" style={{ cursor: "default" }}>
+                  <Avatar student={student} size={30} />
+                  <span className="picker-name">{student.name.split(" ")[0]}</span>
+                  <span className="picker-check"><Icon name="check" size={14} /></span>
+                </div>
+              </div>
+            ) : (
+              <StudentPicker value={studentId} onChange={(id) => { setStudentId(id); setFile(null); setConfirmed(false); }} students={students} />
+            )}
+
+            <label className="confirm-row">
+              <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+              <span>Confirmo que subo el resultado de <strong>{student.name}</strong></span>
+            </label>
 
             <label className="field-label">Archivo del resultado</label>
             <input
@@ -142,7 +205,7 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
                 <div className="dropzone-empty">
                   <span className="dropzone-icon"><Icon name="image" size={26} /></span>
                   <strong>Toca para elegir foto o PDF</strong>
-                  <em>En el celular puedes usar la cámara · JPG, PNG, PDF</em>
+                  <em>Incluye el encabezado con el código ALIS-XXXX · JPG, PNG, PDF</em>
                 </div>
               )}
             </button>
@@ -156,6 +219,12 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
 
         {stage === "done" && analysis && (
           <div className="result">
+            {analysis.alisAnalyzeStale ? (
+              <div className="result-path is-mismatch" style={{ marginBottom: 10 }}>
+                <strong>Aviso técnico</strong>
+                <span>La función analyze-evidence parece desactualizada. Redespliégala en Supabase para el match de código ALIS.</span>
+              </div>
+            ) : null}
             <div className="result-banner">
               <span className="result-score" style={{ fontSize: 16, fontWeight: 700 }}>CNEB</span>
               <div className="result-banner-txt">
@@ -208,17 +277,49 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
             {pathOutcome?.message && (
               <div className={
                 "result-path" +
-                (pathOutcome.mismatched ? " is-mismatch" : (pathOutcome.passed ? " is-pass" : " is-retake"))
+                (pathOutcome.aiFailed || pathOutcome.mismatched
+                  ? " is-mismatch"
+                  : (pathOutcome.passed ? " is-pass" : " is-retake"))
               }>
                 <strong>
-                  {pathOutcome.mismatched
-                    ? "Ruta: no aplicada"
-                    : (pathOutcome.passed ? "Ruta: avanzó / aprobó" : "Ruta: retoma")}
+                  {pathOutcome.aiFailed
+                    ? "Ruta: sin cambios (IA)"
+                    : (pathOutcome.mismatched
+                      ? "Ruta: no aplicada"
+                      : (pathOutcome.diagnosticOnly
+                        ? "Ruta: diagnóstico"
+                        : (pathOutcome.passed ? "Ruta: avanzó / aprobó" : "Ruta: retoma")))}
                 </strong>
                 <span>{pathOutcome.message}</span>
                 {pathOutcome.matchReason ? <em>{pathOutcome.matchReason}</em> : null}
+                {!pathOutcome.aiFailed && pathOutcome.mismatched && (pathOutcome.codeMissing || pathOutcome.expectedCode) ? (
+                  <div className="manual-code">
+                    <p>Si el código está en la hoja pero no se leyó, escríbelo aquí:</p>
+                    <div className="manual-code-row">
+                      <input
+                        className="login-input"
+                        value={manualCode}
+                        onChange={(e) => setManualCode(e.target.value.toUpperCase())}
+                        placeholder={pathOutcome.expectedCode || "ALIS-XXXXXX"}
+                      />
+                      <button
+                        type="button"
+                        className="btn btn--primary btn--sm"
+                        disabled={applyingCode}
+                        onClick={applyManualCode}
+                      >
+                        {applyingCode ? "Validando…" : "Validar código"}
+                      </button>
+                    </div>
+                    <em>Consejo: vuelve a tomar la foto incluyendo el encabezado con el código.</em>
+                  </div>
+                ) : null}
+                {pathOutcome.needsPractice ? (
+                  <em>Primero genera la práctica ALIS de esta sesión y luego sube esa hoja.</em>
+                ) : null}
               </div>
             )}
+            {error && <p className="login-error" style={{ marginTop: 8 }}>{error}</p>}
           </div>
         )}
       </div>
@@ -227,20 +328,22 @@ function UploadModal({ preset, students, teacherId, onClose, onUploaded, onGener
         {stage === "done" ? (
           <>
             <button className="btn btn--ghost" onClick={onClose}>Cerrar</button>
-            <button
-              className="btn btn--primary"
-              onClick={() => {
-                if (onGenerateReinforcement) onGenerateReinforcement(student, analysis);
-                else onClose();
-              }}
-            >
-              <Icon name="sparkles" size={16} /> Generar refuerzo
-            </button>
+            {analysis?.aiFailed ? null : (
+              <button
+                className="btn btn--primary"
+                onClick={() => {
+                  if (onGenerateReinforcement) onGenerateReinforcement(student, analysis);
+                  else onClose();
+                }}
+              >
+                <Icon name="sparkles" size={16} /> Generar refuerzo
+              </button>
+            )}
           </>
         ) : (
           <>
             <button className="btn btn--ghost" onClick={onClose}>Cancelar</button>
-            <button className="btn btn--primary" disabled={!file || stage === "uploading"} onClick={analyze}>
+            <button className="btn btn--primary" disabled={!file || !confirmed || stage === "uploading"} onClick={analyze}>
               <Icon name="sparkles" size={16} /> {stage === "uploading" ? "Analizando…" : "Subir y analizar con IA"}
             </button>
           </>
@@ -334,6 +437,19 @@ function GenerateModal({ preset, students, analysis, teacherId, sessionId, onClo
           <>
             <label className="field-label">Para quién · {student.subject}</label>
             <StudentPicker value={studentId} onChange={(id) => { setStudentId(id); setError(""); }} students={list} />
+
+            {(sessionId || analysis?.topicTitle) ? (
+              <div className="session-bind">
+                <strong>Se amarra a la sesión de ruta</strong>
+                <span>{analysis?.topicTitle || "Sesión actual del alumno"}{sessionId ? ` · id ${sessionId}` : ""}</span>
+                <em>Al generar, esta práctica y su código ALIS quedarán ligados a esa sesión.</em>
+              </div>
+            ) : (
+              <div className="session-bind session-bind--warn">
+                <strong>Sin sesión de ruta explícita</strong>
+                <span>Se amarrará a la sesión en curso del alumno (si existe ruta).</span>
+              </div>
+            )}
 
             <div className="gen-grid">
               <div>

@@ -78,12 +78,36 @@ function applyAnalysisToStudent(studentId, teacherId, analysis) {
       ? Math.round((Number(current.progress || 0) * 0.4) + (score * 0.6))
       : current.progress;
 
+  const topicName = String(analysis.topicTitle || "").trim();
+  let topics = Array.isArray(current.topics) ? current.topics.map((t) => ({ ...t })) : [];
+  if (topicName && score != null && !Number.isNaN(score)) {
+    const idx = topics.findIndex((t) => String(t.name || "").toLowerCase() === topicName.toLowerCase());
+    if (idx >= 0) {
+      const prev = Number(topics[idx].score) || 0;
+      const attempts = (Number(topics[idx].attempts) || 1) + 1;
+      topics[idx] = {
+        ...topics[idx],
+        score: Math.round((prev * 0.4) + (score * 0.6)),
+        attempts,
+      };
+    } else {
+      topics = [{ name: topicName, score: Math.round(score), attempts: 1 }, ...topics].slice(0, 12);
+    }
+  }
+
   const patch = {
     status: analysis.status || current.status,
     progress: Math.max(0, Math.min(100, nextProgress ?? current.progress ?? 0)),
     focus: analysis.topicTitle || current.focus,
     note: analysis.summary || analysis.next || current.note,
-    trend: score == null ? current.trend : (score >= 70 ? 4 : score >= 50 ? 0 : -4),
+    trend: score == null
+      ? current.trend
+      : (score >= (Number(current.learningPath?.passScore) || (typeof LEARNING_PATH_PASS_SCORE === "number" ? LEARNING_PATH_PASS_SCORE : 70))
+        ? 4
+        : score >= 50
+          ? 0
+          : -4),
+    topics,
   };
 
   const list = (window.STUDENTS || []).map((s) => (s.id === studentId ? { ...s, ...patch } : s));
@@ -100,6 +124,7 @@ function applyAnalysisToStudent(studentId, teacherId, analysis) {
         focus: patch.focus,
         note: patch.note,
         trend: patch.trend,
+        topics: patch.topics,
       })
       .eq("id", studentId)
       .eq("teacher_id", teacherId)

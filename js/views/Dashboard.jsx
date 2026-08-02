@@ -1,15 +1,46 @@
 // Dashboard.jsx — SubjectHome: alumnos por área
-function Topbar({ subject, students }) {
+function buildTeacherNotifications(students, pending) {
+  const items = [];
+  (pending || []).slice(0, 6).forEach((p) => {
+    const st = typeof byId === "function" ? byId(p.studentId) : null;
+    items.push({
+      id: "p-" + p.id,
+      studentId: p.studentId || st?.id || null,
+      title: p.label || "Evidencia pendiente",
+      meta: (st?.name?.split(" ")[0] || "Alumno") + " · " + (p.kind || "Revisar"),
+      kind: "pending",
+    });
+  });
+  (students || []).forEach((s) => {
+    const cur = (s.learningPath?.sessions || []).find((x) => x.status === "current");
+    if (cur?.lastResult === "retoma") {
+      items.push({
+        id: "r-" + s.id + "-" + cur.id,
+        studentId: s.id,
+        title: "Necesita retoma",
+        meta: s.name.split(" ")[0] + " · " + cur.title,
+        kind: "retoma",
+      });
+    }
+  });
+  return items.slice(0, 10);
+}
+
+function Topbar({ subject, students, pending, search, onSearch, onOpenStudent }) {
+  const [openNotif, setOpenNotif] = React.useState(false);
   const hour = new Date().getHours();
   const greet = hour < 12 ? "Buenos días" : hour < 19 ? "Buenas tardes" : "Buenas noches";
   const attn = students.filter((s) => s.status === "riesgo" || s.status === "atencion").length;
-  const first = TEACHER.name.split(" ")[0];
+  const first = (typeof TEACHER !== "undefined" && TEACHER.name ? TEACHER.name : "Docente").split(" ")[0];
+  const notifs = buildTeacherNotifications(students, pending);
+  const isLocal = /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
   return (
     <header className="topbar">
       <div className="topbar-l">
         <h1 className="topbar-title">
           <span className="topbar-subj"><Icon name={subject.icon} size={20} /></span>
           {subject.name}
+          <span className={"env-badge" + (isLocal ? " is-local" : " is-prod")}>{isLocal ? "LOCAL" : "PROD"}</span>
         </h1>
         <p className="topbar-sub">
           {greet}, {first} · {attn > 0 ? `${attn} ${attn === 1 ? "alumno necesita" : "alumnos necesitan"} atención hoy` : "todo en orden hoy"}
@@ -18,10 +49,49 @@ function Topbar({ subject, students }) {
       <div className="topbar-r">
         <div className="search">
           <Icon name="search" size={18} />
-          <input placeholder={`Buscar en ${subject.name}…`} />
+          <input
+            placeholder={`Buscar en ${subject.name}…`}
+            value={search || ""}
+            onChange={(e) => onSearch?.(e.target.value)}
+            aria-label={`Buscar alumnos en ${subject.name}`}
+          />
           <kbd>⌘K</kbd>
         </div>
-        <button className="icon-pill" title="Notificaciones"><Icon name="bell" size={19} /><span className="icon-pill-dot" /></button>
+        <div className="notif-wrap">
+          <button
+            type="button"
+            className="icon-pill"
+            title="Notificaciones"
+            onClick={() => setOpenNotif((v) => !v)}
+          >
+            <Icon name="bell" size={19} />
+            {notifs.length ? <span className="icon-pill-dot" /> : null}
+          </button>
+          {openNotif ? (
+            <div className="notif-pop">
+              <strong>Hoy</strong>
+              {notifs.length ? notifs.map((n) => (
+                <button
+                  type="button"
+                  className={"notif-item notif-item--" + n.kind}
+                  key={n.id}
+                  onClick={() => {
+                    const st = n.studentId && typeof byId === "function" ? byId(n.studentId) : null;
+                    if (st && onOpenStudent) {
+                      setOpenNotif(false);
+                      onOpenStudent(st);
+                    }
+                  }}
+                >
+                  <span>{n.title}</span>
+                  <em>{n.meta}</em>
+                </button>
+              )) : (
+                <p className="notif-empty">Sin avisos por ahora.</p>
+              )}
+            </div>
+          ) : null}
+        </div>
       </div>
     </header>
   );
@@ -89,14 +159,34 @@ function SuggestionCard({ s, onOpen, onAct, onDismiss }) {
 }
 
 function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent, onUpload, onGenerate, onAddStudent, onDismissSuggestion }) {
+  const [search, setSearch] = React.useState("");
+  const q = String(search || "").trim().toLowerCase();
   const shown = students.filter((s) => {
-    if (t.filter === "todos") return true;
-    if (t.filter === "riesgo") return s.status === "riesgo" || s.status === "atencion";
-    return s.status === "destacado";
+    if (t.filter === "todos") { /* ok */ }
+    else if (t.filter === "riesgo") {
+      if (s.status !== "riesgo" && s.status !== "atencion") return false;
+    } else if (s.status !== "destacado") return false;
+    if (!q) return true;
+    const blob = [
+      s.name,
+      s.focus,
+      s.grade,
+      s.note,
+      s.competenceLabel,
+      ...(s.topics || []).map((tp) => tp?.name),
+    ].filter(Boolean).join(" ").toLowerCase();
+    return blob.includes(q);
   });
   return (
     <div className="view">
-      <Topbar subject={subject} students={students} />
+      <Topbar
+        subject={subject}
+        students={students}
+        pending={pending}
+        search={search}
+        onSearch={setSearch}
+        onOpenStudent={onOpenStudent}
+      />
       <div className="view-body">
         <KpiStrip students={students} />
         <div className="grid-2">
@@ -136,7 +226,11 @@ function SubjectHome({ subject, students, suggestions, pending, t, onOpenStudent
                 <StudentCard key={s.id} student={s} variant={t.cardStyle} onOpen={() => onOpenStudent(s)} onUpload={() => onUpload(s)} />
               )) : (
                 <div className="scards-empty">
-                  <p>{students.length ? "No hay alumnos en este filtro." : "Aún no tienes alumnos en esta área."}</p>
+                  <p>
+                    {students.length
+                      ? (q ? "Ningún alumno coincide con la búsqueda." : "No hay alumnos en este filtro.")
+                      : "Aún no tienes alumnos en esta área."}
+                  </p>
                 </div>
               )}
             </div>

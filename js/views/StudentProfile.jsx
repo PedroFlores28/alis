@@ -77,7 +77,7 @@ function StudentProfile({ student, onBack, onUpload, onGenerate, onEdit, onEditH
                   <div className="topic" key={tp.name}>
                     <span className="topic-name">{tp.name}</span>
                     <div className="topic-bar"><ProgressBar value={tp.score} status={st} /></div>
-                    <span className="topic-score">{tp.score}%</span>
+                    <span className="topic-score">{tp.score}%{tp.attempts ? ` · ${tp.attempts}` : ""}</span>
                   </div>
                 );
               }) : (

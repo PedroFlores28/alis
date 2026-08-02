@@ -24,6 +24,13 @@ ALIS es un panel **solo para docentes/tutores**. Login con Google, alumnos propi
 5. Secret `GEMINI_API_KEY` en Edge Functions → Secrets (análisis y material)
 6. (Opcional) `supabase/suggestions-setup.sql` para persistir sugerencias en Supabase
 
+## Checklist post-deploy (importante)
+
+1. Netlify despliega el front desde `main` solo.
+2. Tras cambios en `supabase/functions/analyze-evidence`, **redesplegar** la Edge Function en Supabase (pegar código + Deploy).
+3. Verifica el header `x-alis-analyze-version` (debe incluir `code`). Si el front avisa “analyze-evidence desactualizada”, falta el paso 2.
+4. Probar: generar práctica → ver código ALIS en PDF → subir esa hoja → ruta aplica; subir otra hoja → ruta no aplica.
+
 ## Pendiente del MVP
 
 - Historial académico más rico (gráficas / por competencia)

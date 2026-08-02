@@ -52,13 +52,23 @@ async function callAnalyzeEvidence(payload) {
       "Content-Type": "application/json",
       Authorization: "Bearer " + token,
       apikey: window.ALIS_CONFIG?.supabaseKey || "",
+      "x-alis-client": "web-2026-08-01",
     },
     body: JSON.stringify(payload),
   });
 
   const json = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(json.error || ("Error IA " + res.status));
-  return json.analysis;
+  const analysis = json.analysis && typeof json.analysis === "object" ? json.analysis : null;
+  if (!analysis) throw new Error("Respuesta de análisis vacía o inválida.");
+  const version = res.headers.get("x-alis-analyze-version")
+    || json.alisAnalyzeVersion
+    || analysis.alisAnalyzeVersion
+    || null;
+  analysis.alisAnalyzeVersion = version;
+  // Solo avisa si no hay versión (función vieja sin redesplegar)
+  analysis.alisAnalyzeStale = !version;
+  return analysis;
 }
 
 /**
@@ -102,6 +112,7 @@ async function uploadEvidence({ teacherId, student, file }) {
   }
 
   let analysis;
+  let analysisFailed = false;
   try {
     const payload = {
       evidenceId: evidenceRow?.id || null,
@@ -140,35 +151,61 @@ async function uploadEvidence({ teacherId, student, file }) {
     analysis = await callAnalyzeEvidence(payload);
   } catch (err) {
     console.warn("[ALIS] analyze-evidence:", err.message);
-    // Fallback curricular si la función aún no está desplegada
-    analysis = typeof buildEvidenceAnalysis === "function"
-      ? buildEvidenceAnalysis(student, file.name)
-      : { score: null, status: "atencion", topicTitle: file.name, obs: [{ ok: false, t: err.message }], next: "Reintentar análisis." };
-    analysis.obs = [
-      ...(analysis.obs || []),
-      { ok: false, t: "IA no disponible ahora: " + err.message },
-    ];
+    analysisFailed = true;
+    // No inventar nota ni avanzar ruta: error honesto para el docente
+    analysis = {
+      aiFailed: true,
+      score: null,
+      status: "atencion",
+      topicTitle: file.name || "Evidencia",
+      graphicDescription: "",
+      graphicElements: [],
+      exerciseGoal: "",
+      documentMarkdown: "",
+      studentDiagnosis: {
+        strengths: [],
+        errors: ["No se pudo completar el análisis con IA."],
+        summary: err.message || "Error al analizar la evidencia.",
+      },
+      obs: [{ ok: false, t: "IA no disponible: " + (err.message || "error desconocido") }],
+      next: "Revisa el despliegue de analyze-evidence (Supabase) y vuelve a intentar.",
+      summary: "Análisis no disponible. La ruta no se modificó.",
+      alisAnalyzeStale: false,
+    };
   }
 
   if (evidenceRow?.id && client) {
-    await client.from("evidence").update({ status: "analyzed", analysis }).eq("id", evidenceRow.id);
+    await client.from("evidence").update({
+      status: analysisFailed ? "error" : "analyzed",
+      analysis,
+    }).eq("id", evidenceRow.id);
   }
 
   const score = analysis?.score;
   const topic = analysis?.topicTitle || file.name;
 
   let pathOutcome = null;
-  if (typeof applyLearningPathFromAnalysis === "function") {
+  // Solo tocar la ruta si el análisis real de la IA se completó
+  if (!analysisFailed && typeof applyLearningPathFromAnalysis === "function") {
     const pathResult = await applyLearningPathFromAnalysis(student.id, teacherId, analysis);
     pathOutcome = pathResult?.outcome || null;
+  } else if (analysisFailed) {
+    pathOutcome = {
+      passed: false,
+      advanced: false,
+      applied: false,
+      aiFailed: true,
+      message: "No se pudo analizar con IA. La ruta no se modificó.",
+    };
   }
 
+  const historyId = "h-" + Date.now();
   await appendStudentHistory(student.id, teacherId, {
-    id: "h-" + Date.now(),
+    id: historyId,
     label: topic,
     date: "Hoy",
     score: score == null ? null : Number(score),
-    type: "Evidencia",
+    type: analysisFailed ? "Error IA" : "Evidencia",
     status: analysis?.status || null,
     fileName: file.name,
     graphicDescription: analysis?.graphicDescription || "",
@@ -180,21 +217,26 @@ async function uploadEvidence({ teacherId, student, file }) {
     obs: analysis?.obs || [],
     next: analysis?.next || "",
     pathSessionTitle: pathOutcome?.sessionTitle || null,
-    pathResult: pathOutcome?.mismatched
-      ? "no_aplica"
-      : (pathOutcome?.passed ? "aprobada" : (pathOutcome ? "retoma" : null)),
+    pathResult: analysisFailed
+      ? "error_ia"
+      : (pathOutcome?.mismatched
+        ? "no_aplica"
+        : (pathOutcome?.passed ? "aprobada" : (pathOutcome ? "retoma" : null))),
     pathMessage: pathOutcome?.message || null,
     pathMatch: pathOutcome?.match || analysis?.pathMatch || null,
   });
 
-  if (typeof applyAnalysisToStudent === "function") {
-    applyAnalysisToStudent(student.id, teacherId, analysis);
-  }
-  if (typeof createSuggestionFromAnalysis === "function") {
-    await createSuggestionFromAnalysis(teacherId, student, analysis);
-  }
-  if (typeof createPendingFromEvidence === "function") {
-    await createPendingFromEvidence(teacherId, student, analysis, file.name);
+  // No ensuciar métricas del alumno con análisis inventados
+  if (!analysisFailed) {
+    if (typeof applyAnalysisToStudent === "function") {
+      applyAnalysisToStudent(student.id, teacherId, analysis);
+    }
+    if (typeof createSuggestionFromAnalysis === "function") {
+      await createSuggestionFromAnalysis(teacherId, student, analysis);
+    }
+    if (typeof createPendingFromEvidence === "function") {
+      await createPendingFromEvidence(teacherId, student, analysis, file.name);
+    }
   }
 
   if (!evidenceRow) {
@@ -205,15 +247,44 @@ async function uploadEvidence({ teacherId, student, file }) {
       subjectId: student.subjectId,
       fileName: file.name,
       mimeType: file.type,
-      status: "analyzed",
+      status: analysisFailed ? "error" : "analyzed",
       analysis,
       createdAt: new Date().toISOString(),
     };
     appendLocalEvidence(teacherId, localItem);
-    return { evidence: localItem, analysis, pathOutcome, source: "local" };
+    return { evidence: localItem, analysis, pathOutcome, source: "local", analysisFailed, historyId };
   }
 
-  return { evidence: { ...evidenceRow, analysis, status: "analyzed" }, analysis, pathOutcome, source: "supabase" };
+  return {
+    evidence: { ...evidenceRow, analysis, status: analysisFailed ? "error" : "analyzed" },
+    analysis,
+    pathOutcome,
+    source: "supabase",
+    analysisFailed,
+    historyId,
+  };
+}
+
+/** Actualiza solo campos de ruta en un ítem del historial (p. ej. tras validar código manual). */
+async function patchHistoryPathFields(studentId, teacherId, entryKey, fields) {
+  const current = (window.STUDENTS || []).find((s) => s.id === studentId);
+  if (!current) return null;
+  const history = [...(current.history || [])];
+  const idx = entryKey
+    ? findHistoryIndex(history, entryKey)
+    : (history.length ? 0 : -1);
+  if (idx < 0) return null;
+
+  history[idx] = {
+    ...history[idx],
+    pathSessionTitle: fields.pathSessionTitle != null
+      ? fields.pathSessionTitle
+      : history[idx].pathSessionTitle,
+    pathResult: fields.pathResult != null ? fields.pathResult : history[idx].pathResult,
+    pathMessage: fields.pathMessage != null ? fields.pathMessage : history[idx].pathMessage,
+    pathMatch: fields.pathMatch != null ? fields.pathMatch : history[idx].pathMatch,
+  };
+  return persistStudentHistory(studentId, teacherId, history, current.sessions || history.length);
 }
 
 async function appendStudentHistory(studentId, teacherId, entry) {
@@ -352,4 +423,5 @@ Object.assign(window, {
   historyEntryKey,
   updateStudentHistoryEntry,
   deleteStudentHistoryEntry,
+  patchHistoryPathFields,
 });

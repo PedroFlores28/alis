@@ -157,8 +157,10 @@ function App({ teacher, onLogout }) {
     content = (
       <RutaPedagogicaView
         student={live}
+        teacherId={teacherId}
         onBack={() => setRoute({ view: "alumnos", student: null })}
         onGenerate={openGenerate}
+        onPathUpdated={() => pullFromWindow()}
       />
     );
   } else if (route.view === "config") {

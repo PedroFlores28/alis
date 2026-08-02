@@ -31,8 +31,14 @@ function collectUsedPracticeCodes() {
   for (const student of students) {
     const sessions = student?.learningPath?.sessions || [];
     for (const session of sessions) {
-      const code = String(session?.expectedPractice?.code || "").trim().toUpperCase();
-      if (code) used.add(code);
+      const codes = [
+        session?.expectedPractice?.code,
+        ...((session?.generatedPractices || []).map((p) => p?.code)),
+      ];
+      for (const c of codes) {
+        const code = String(c || "").trim().toUpperCase();
+        if (code) used.add(code);
+      }
     }
   }
 
@@ -90,6 +96,15 @@ function evidenceMentionsPracticeCode(analysis, code) {
   const raw = String(code || "").toUpperCase().replace(/\s+/g, "");
   if (!raw) return false;
   const compact = raw.replace(/-/g, "");
+
+  // Solo confiar en practiceCodeFound si el código leído coincide con el esperado
+  const seenRaw = String(analysis?.practiceCodeSeen || "").toUpperCase().replace(/\s+/g, "");
+  const seenCompact = seenRaw.replace(/-/g, "");
+  if (analysis?.practiceCodeFound === true) {
+    if (seenRaw && (seenRaw === raw || seenCompact === compact || seenRaw.includes(compact))) return true;
+    // Si dice “found” pero no declara cuál, no aceptar a ciegas
+  }
+
   const blob = [
     analysis?.documentMarkdown,
     analysis?.graphicDescription,
@@ -105,13 +120,11 @@ function evidenceMentionsPracticeCode(analysis, code) {
     .toUpperCase()
     .replace(/\s+/g, "");
 
-  if (analysis?.practiceCodeFound === true) return true;
   if (blob.includes(raw) || blob.includes(compact)) return true;
-  const seen = String(analysis?.practiceCodeSeen || "").toUpperCase().replace(/\s+/g, "");
-  return !!(seen && (seen === raw || seen === compact || seen.includes(compact)));
+  return !!(seenRaw && (seenRaw === raw || seenCompact === compact || seenRaw.includes(compact)));
 }
 
-function resolvePathMatch(analysis, expected) {
+function resolvePathMatch(analysis, expected, options = {}) {
   // Solo avanza/retoma con práctica GENERADA por ALIS y código visible en la evidencia.
   if (!expected || expected.source !== "generated" || !expected.code) {
     return {
@@ -120,25 +133,54 @@ function resolvePathMatch(analysis, expected) {
     };
   }
 
+  const expectedCode = String(expected.code).toUpperCase();
+  const manual = String(options.manualPracticeCode || "").trim().toUpperCase();
+
+  if (manual) {
+    if (manual !== expectedCode) {
+      return {
+        match: "no",
+        reason: `El código escrito no es el de la práctica vigente (${expectedCode}).`,
+        codeMissing: true,
+        expectedCode,
+      };
+    }
+    // Código manual correcto: valida identidad; el contenido ya se calificó en el análisis
+    return {
+      match: "yes",
+      reason: `Código ${expectedCode} confirmado por el docente.`,
+    };
+  }
+
   if (!evidenceMentionsPracticeCode(analysis, expected.code)) {
     return {
       match: "no",
-      reason: `No se detectó el código ${expected.code}. Sube la hoja generada por ALIS con el código visible.`,
+      reason: `Código ${expectedCode} no legible o ausente. Vuelve a tomar la foto incluyendo el encabezado, o escribe el código manualmente.`,
+      codeMissing: true,
+      expectedCode,
     };
   }
 
   const ai = String(analysis?.pathMatch || "").toLowerCase().trim();
-  if (ai === "no") {
+  // Si el código esperado está en la hoja, no bloquear solo por pathMatch="no"
+  // (la IA a menudo dice "no" cuando no vio el código aunque el tema coincida).
+  if (ai === "no" && analysis?.pathMatchReason && /código|codigo|no se (ve|lee|detect)/i.test(String(analysis.pathMatchReason))) {
     return {
-      match: "no",
-      reason: String(analysis?.pathMatchReason || "").trim()
-        || "El código aparece, pero el contenido no corresponde a esa práctica.",
+      match: "yes",
+      reason: `Práctica ALIS verificada por código (${expectedCode}).`,
+    };
+  }
+  if (ai === "no") {
+    // Con código visible en la evidencia, confiar en el código (anti-engaño principal)
+    return {
+      match: "yes",
+      reason: `Práctica ALIS verificada por código (${expectedCode}).`,
     };
   }
 
   return {
     match: "yes",
-    reason: `Práctica ALIS verificada (${expected.code}).`,
+    reason: `Práctica ALIS verificada (${expectedCode}).`,
   };
 }
 
@@ -177,6 +219,7 @@ function normalizeLearningPath(raw, student, analysis, cneb) {
       lastResult: s.lastResult === "aprobada" || s.lastResult === "retoma" ? s.lastResult : null,
       lastEvidenceAt: s.lastEvidenceAt || null,
       expectedPractice: normalizeExpectedPractice(s.expectedPractice),
+      generatedPractices: Array.isArray(s.generatedPractices) ? s.generatedPractices.slice(0, 8) : [],
     }))
     .sort((a, b) => a.order - b.order);
 
@@ -338,10 +381,11 @@ function buildLearningPathFromAnalysis(student, analysis, cneb) {
 
 function didPassLearningSession(analysis, passScore) {
   const threshold = Number(passScore) || LEARNING_PATH_PASS_SCORE;
+  // Para avanzar/retomar se exige nota numérica (alineado a la UI “mínimo X”)
   if (analysis?.score != null && analysis.score !== "" && Number.isFinite(Number(analysis.score))) {
     return Number(analysis.score) >= threshold;
   }
-  return analysis?.status === "normal" || analysis?.status === "destacado";
+  return false;
 }
 
 function progressExistingLearningPath(path, analysis) {
@@ -392,6 +436,26 @@ function progressExistingLearningPath(path, analysis) {
       advanced = true;
     }
   } else {
+    // Retoma: invalida la práctica anterior (hay que generar otra con código nuevo)
+    if (session.expectedPractice) {
+      const code = String(session.expectedPractice.code || "").toUpperCase();
+      const fullSnap = (session.generatedPractices || []).find(
+        (p) => String(p.code || "").toUpperCase() === code
+      );
+      const archived = {
+        ...(fullSnap || session.expectedPractice),
+        ...session.expectedPractice,
+        exercises: (fullSnap && fullSnap.exercises) || session.expectedPractice.exercises || [],
+        invalidatedAt: new Date().toISOString(),
+        reason: "retoma",
+      };
+      // Evitar duplicar el mismo código en el historial
+      const rest = (session.generatedPractices || []).filter(
+        (p) => String(p.code || "").toUpperCase() !== code
+      );
+      session.generatedPractices = [archived, ...rest].slice(0, 8);
+      session.expectedPractice = null;
+    }
     session.status = "current";
     sessions[currentIdx] = session;
   }
@@ -420,7 +484,7 @@ function progressExistingLearningPath(path, analysis) {
         ? (advanced
           ? `Aprobó “${session.title}” (${score ?? "sin nota"}). Avanza a “${nextCurrent.title}”.`
           : `Aprobó “${session.title}”. Completó la ruta.`)
-        : `Retoma “${session.title}”. Nota ${score ?? "sin estimar"} / mínimo ${passScore}. Genera otra práctica del mismo nivel.`,
+        : `Retoma “${session.title}”. Nota ${score ?? "sin estimar"} / mínimo ${passScore}. La práctica anterior quedó invalidada: genera una retoma nueva (otro código ALIS).`,
     },
   };
 }
@@ -489,15 +553,60 @@ async function recordExpectedPractice(studentId, teacherId, material, opts = {})
   if (material && session.expectedPractice?.code) {
     material.practiceCode = session.expectedPractice.code;
   }
+
+  const snapshot = {
+    id: session.expectedPractice?.id || ("gp-" + Date.now()),
+    code: session.expectedPractice?.code || null,
+    title: material.title || session.title,
+    topic: material.topic || session.title,
+    type: material.type || opts.type || "practica",
+    difficulty: material.difficulty || opts.difficulty || null,
+    exercises: Array.isArray(material.exercises) ? material.exercises.slice(0, 20) : [],
+    teacherNotes: material.teacherNotes || "",
+    generatedAt: new Date().toISOString(),
+    sessionId: session.id,
+    sessionTitle: session.title,
+  };
+  session.generatedPractices = [snapshot, ...(session.generatedPractices || [])].slice(0, 8);
+
   path.sessions[idx] = session;
   path.updatedAt = new Date().toISOString();
 
   return saveStudentLearningPath(studentId, teacherId, path);
 }
 
-async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
+async function updateLearningPathPassScore(studentId, teacherId, passScore) {
+  const current = (window.STUDENTS || []).find((s) => s.id === studentId);
+  if (!current?.learningPath?.sessions?.length) return null;
+  const cneb = typeof cnebForStudent === "function" ? cnebForStudent(current) : null;
+  const path = normalizeLearningPath(current.learningPath, current, null, cneb);
+  const next = Math.max(50, Math.min(100, Number(passScore) || LEARNING_PATH_PASS_SCORE));
+  path.passScore = next;
+  path.updatedAt = new Date().toISOString();
+  return saveStudentLearningPath(studentId, teacherId, path);
+}
+
+function findGeneratedPractice(student, code) {
+  const sessions = student?.learningPath?.sessions || [];
+  const want = String(code || "").trim().toUpperCase();
+  for (const s of sessions) {
+    const list = s.generatedPractices || [];
+    for (const p of list) {
+      if (String(p.code || "").toUpperCase() === want) return { practice: p, session: s };
+    }
+    if (s.expectedPractice?.code && String(s.expectedPractice.code).toUpperCase() === want) {
+      return { practice: { ...s.expectedPractice, exercises: s.expectedPractice.exercises || [] }, session: s };
+    }
+  }
+  return null;
+}
+
+async function applyLearningPathFromAnalysis(studentId, teacherId, analysis, options = {}) {
   const current = (window.STUDENTS || []).find((s) => s.id === studentId);
   if (!current) return { student: null, outcome: null };
+
+  const patchedAnalysis = { ...(analysis || {}) };
+  const manualCode = String(options.manualPracticeCode || "").trim().toUpperCase();
 
   const cneb = typeof cnebForStudent === "function" ? cnebForStudent(current) : null;
   const existing = current.learningPath?.sessions?.length
@@ -513,7 +622,7 @@ async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
     const currentSession = existing.sessions.find((s) => s.status === "current")
       || existing.sessions.find((s) => s.status === "pending");
     const expected = currentSession?.expectedPractice || null;
-    const match = resolvePathMatch(analysis, expected);
+    const match = resolvePathMatch(patchedAnalysis, expected, { manualPracticeCode: manualCode || null });
 
     if (match.match !== "yes") {
       return {
@@ -526,9 +635,12 @@ async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
           mismatched: true,
           match: match.match,
           matchReason: match.reason,
+          codeMissing: !!match.codeMissing,
+          expectedCode: match.expectedCode || expected?.code || null,
+          needsPractice: !expected || expected.source !== "generated",
           sessionId: currentSession?.id || null,
           sessionTitle: currentSession?.title || null,
-          score: analysis?.score == null ? null : Number(analysis.score),
+          score: patchedAnalysis?.score == null ? null : Number(patchedAnalysis.score),
           passScore: existing.passScore || LEARNING_PATH_PASS_SCORE,
           attempts: currentSession?.attempts || 0,
           nextTitle: currentSession?.title || null,
@@ -539,7 +651,7 @@ async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
       };
     }
 
-    const progressed = progressExistingLearningPath(existing, analysis);
+    const progressed = progressExistingLearningPath(existing, patchedAnalysis);
     path = progressed.path;
     outcome = {
       ...progressed.outcome,
@@ -549,7 +661,25 @@ async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
       matchReason: match.reason,
     };
   } else {
-    path = normalizeLearningPath(analysis?.learningPath, current, analysis, cneb);
+    // Primera evidencia: crea ruta/diagnóstico. No exige código ALIS.
+    // No crear ruta fantasma si el análisis es un fallo de IA.
+    if (patchedAnalysis?.aiFailed) {
+      return {
+        student: current,
+        outcome: {
+          passed: false,
+          advanced: false,
+          completed: false,
+          applied: false,
+          mismatched: false,
+          aiFailed: true,
+          message: "No se pudo analizar con IA. La ruta no se modificó. Revisa la función analyze-evidence o intenta de nuevo.",
+          score: null,
+        },
+        path: existing,
+      };
+    }
+    path = normalizeLearningPath(patchedAnalysis?.learningPath, current, patchedAnalysis, cneb);
     const currentSession = path.sessions.find((s) => s.status === "current");
     outcome = {
       passed: true,
@@ -557,15 +687,16 @@ async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
       completed: false,
       applied: true,
       mismatched: false,
+      diagnosticOnly: true,
       sessionId: path.sessions[0]?.id || null,
       sessionTitle: path.sessions[0]?.title || "Diagnóstico",
-      score: analysis?.score == null ? null : Number(analysis.score),
+      score: patchedAnalysis?.score == null ? null : Number(patchedAnalysis.score),
       passScore: path.passScore || LEARNING_PATH_PASS_SCORE,
       attempts: 1,
       nextTitle: currentSession?.title || null,
       message: currentSession
-        ? `Ruta creada. Siguiente sesión en curso: “${currentSession.title}” (mínimo ${path.passScore || LEARNING_PATH_PASS_SCORE}).`
-        : "Ruta creada.",
+        ? `Diagnóstico guardado y ruta creada. Sesión en curso: “${currentSession.title}”. Para avanzar o retomar, genera la práctica ALIS y súbela con su código.`
+        : "Diagnóstico guardado y ruta creada.",
       created: true,
     };
   }
@@ -576,27 +707,21 @@ async function applyLearningPathFromAnalysis(studentId, teacherId, analysis) {
 
 function learningPathForStudent(student) {
   if (!student) return null;
+  // Solo devolver rutas realmente guardadas (evita UI “fantasma” no persistida)
   if (student.learningPath?.sessions?.length) {
     return normalizeLearningPath(student.learningPath, student, null, cnebForStudent?.(student));
   }
-  const cneb = typeof cnebForStudent === "function" ? cnebForStudent(student) : null;
-  return buildLearningPathFromAnalysis(
-    student,
-    { topicTitle: student.focus, summary: student.note, next: student.note, obs: [] },
-    cneb
-  );
+  return null;
 }
 
 Object.assign(window, {
   LEARNING_PATH_PASS_SCORE,
-  normalizeLearningPath,
-  buildLearningPathFromAnalysis,
   applyLearningPathFromAnalysis,
-  progressExistingLearningPath,
-  saveStudentLearningPath,
   learningPathForStudent,
   expectedPracticeForStudent,
   recordExpectedPractice,
-  resolvePathMatch,
   makePracticeCode,
+  updateLearningPathPassScore,
+  findGeneratedPractice,
+  saveStudentLearningPath,
 });
